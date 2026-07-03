@@ -12,6 +12,11 @@ export default function Navbar() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -83,23 +88,41 @@ export default function Navbar() {
     },
   ];
 
+  if (!mounted) {
+    return null;
+  }
+
+  if (pathname === "/" || pathname === "/onboarding" || pathname === "/login" || pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <>
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 max-w-md w-[calc(100%-2.5rem)] bg-white/10 backdrop-blur-xl border border-white/20 rounded-full py-2.5 px-3 shadow-2xl flex items-center justify-between z-50">
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 max-w-md w-[calc(100%-2.5rem)] bg-[var(--nav-bg)] backdrop-blur-xl border border-[var(--border-color)] rounded-full py-2.5 px-3 shadow-2xl flex items-center justify-between z-[100] transition-colors duration-300">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => {
               if (tab.id === "admin") {
-                setIsAdminModalOpen(true);
+                const hasAdminCookie = typeof document !== "undefined" && 
+                  document.cookie.split("; ").some(row => row.trim().startsWith("userRole=admin"));
+                const hasAdminStorage = typeof window !== "undefined" && 
+                  localStorage.getItem("userRole") === "admin";
+                
+                const isAdminUser = hasAdminCookie && hasAdminStorage;
+                
+                if (isAdminUser) {
+                  router.push("/admin");
+                } else {
+                  if (typeof window !== "undefined") {
+                    localStorage.removeItem("userRole");
+                  }
+                  setIsAdminModalOpen(true);
+                }
                 return;
               }
               if (tab.id === "profile") {
-                if (!isLoggedIn) {
-                  router.push("/login");
-                } else {
-                  router.push("/profile");
-                }
+                router.push("/profile");
                 return;
               }
               if (tab.id === "stats") {
@@ -117,8 +140,8 @@ export default function Navbar() {
             }}
             className={`flex items-center gap-2 py-2 px-4 rounded-full transition-all duration-300 ease-in-out cursor-pointer active:scale-95 ${
               activeTab === tab.id
-                ? "bg-white/20 border border-white/20 text-white shadow-lg"
-                : "text-white/60 hover:text-white/90 hover:bg-white/5"
+                ? "bg-black/10 border border-black/20 text-black dark:bg-white/20 dark:border-white/20 dark:text-white shadow-lg"
+                : "text-[var(--text-color)]/60 hover:text-[var(--text-color)] hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
             {tab.icon}
@@ -147,23 +170,20 @@ export default function Navbar() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-x-6 top-1/2 -translate-y-1/2 mx-auto max-w-sm w-[90%] bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-4 overflow-hidden backdrop-blur-xl"
+              className="fixed inset-x-6 top-1/2 -translate-y-1/2 mx-auto max-w-sm w-[90%] app-theme-card rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-4 overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500 to-indigo-500 opacity-10 blur-3xl pointer-events-none" />
-
               <div className="flex justify-between items-center w-full z-10">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <ShieldCheck className="w-4.5 h-4.5 text-purple-400" /> Admin
-                    Auth
+                  <h3 className="text-sm font-bold app-theme-text uppercase tracking-wider flex items-center gap-2">
+                    <ShieldCheck className="w-4.5 h-4.5 text-[var(--text-color)]" /> Admin Auth
                   </h3>
-                  <span className="text-[10px] text-white/50 font-semibold mt-1">
-                    Akses terbatas untuk Administrator
+                  <span className="text-[10px] app-theme-text-muted font-semibold mt-1">
+                    Login sebagai Admin untuk mengelola konten
                   </span>
                 </div>
                 <button
                   onClick={() => setIsAdminModalOpen(false)}
-                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/55 hover:text-white transition-colors cursor-pointer"
+                  className="w-7 h-7 rounded-lg app-theme-card flex items-center justify-center text-[var(--text-color)]/55 hover:text-[var(--text-color)] transition-colors cursor-pointer"
                 >
                   <svg
                     className="w-4 h-4"
@@ -188,7 +208,7 @@ export default function Navbar() {
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
                   autoComplete="off"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-4 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500/50 transition-all shadow-inner"
+                  className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl py-3.5 px-4 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/30 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:border-[var(--text-color)]/50 transition-all shadow-inner"
                 />
                 <input
                   type="password"
@@ -196,7 +216,7 @@ export default function Navbar() {
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-4 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500/50 transition-all shadow-inner"
+                  className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl py-3.5 px-4 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/30 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:border-[var(--text-color)]/50 transition-all shadow-inner"
                 />
                 <button
                   onClick={() => {
@@ -213,7 +233,7 @@ export default function Navbar() {
                       alert("Invalid credentials.");
                     }
                   }}
-                  className="mt-2 w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 rounded-2xl py-3.5 text-xs font-bold text-white shadow-lg border border-white/10 transition-all active:scale-95 cursor-pointer"
+                  className="mt-2 w-full bg-[var(--text-color)] hover:bg-[var(--text-color)]/95 text-[var(--bg-color)] rounded-2xl py-3.5 text-xs font-bold shadow-lg border border-[var(--border-color)] transition-all active:scale-95 cursor-pointer"
                 >
                   Login Admin
                 </button>

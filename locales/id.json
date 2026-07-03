@@ -5,7 +5,7 @@
     "cancel": "Batal"
   },
   "dashboard": {
-    "title": "Stry",
+    "title": "Studee",
     "search": "Cari",
     "notification": "Notifikasi",
     "weeklyStreak": "Weekly Streak Calendar",
@@ -30,7 +30,7 @@
     "adminDashboard": "Admin Dashboard",
     "logOut": "Log Out",
     "languageModalTitle": "Pilih Bahasa",
-    "languageModalDesc": "Ubah bahasa aplikasi Stry"
+    "languageModalDesc": "Ubah bahasa aplikasi Studee"
   },
   "profile": {
     "title": "My Profile",

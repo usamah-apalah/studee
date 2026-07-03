@@ -4,7 +4,7 @@ import httpx
 import os
 
 app = FastAPI(
-    title="Stry AI Quiz Generator API Backend",
+    title="Studee AI Quiz Generator API Backend",
     description="Backend service to save content data and generate quizzes using Google Gemini AI.",
     version="1.0.0"
 )
@@ -77,7 +77,7 @@ async def generate_quiz_with_ai(payload: ContentPayload):
     ai_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_api_key}"
     
     prompt = (
-        f"Anda adalah asisten pembuat kuis Stry. Buatlah 3 soal pilihan ganda interaktif bahasa Indonesia "
+        f"Anda adalah asisten pembuat kuis Studee. Buatlah 3 soal pilihan ganda interaktif bahasa Indonesia "
         f"berdasarkan materi pelajaran dengan judul '{payload.title}' dan penjelasan deskripsi berikut: "
         f"'{payload.description}'. Pastikan format respons berupa JSON array objek dengan properti "
         f"'question', 'options' (array 4 string), dan 'correct_answer' (pilihan yang tepat)."

@@ -13,12 +13,22 @@ import {
   Database,
   ExternalLink,
   Code,
+  Sparkles,
+  Save,
+  X,
+  ArrowUp,
+  ArrowDown,
+  HelpCircle,
+  Info,
+  BookOpen,
+  Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminDashboard() {
   const router = useRouter();
 
+  // Admin Access Verification
   useEffect(() => {
     const role =
       localStorage.getItem("userRole") ||
@@ -31,211 +41,279 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  const [contents, setContents] = useState(() => {
-    if (typeof window === "undefined") return [];
+  // General States
+  const [subjects, setSubjects] = useState([]);
+  const [isAddMapelModalOpen, setIsAddMapelModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null); // Selected subject for Drill-Down view
+  const [drillDownTab, setDrillDownTab] = useState("materi"); // 'materi', 'details', 'quiz'
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-    const defaultMock = [
-      {
-        id: 1,
-        title: "Dasar-Dasar Aljabar Linear",
-        name: "Dasar-Dasar Aljabar Linear",
-        description:
-          "Pengenalan sistem persamaan linear, matriks, determinan, dan vektor ruang.",
-        category: "Matematika",
-        driveLink: "https://drive.google.com/drive/folders/math101",
-        quizStatus: "Sudah Ada",
-        progress: 80,
-        streak: 30,
-        color: "from-amber-400 to-orange-500",
-        level: "Intermediate",
-        duration: "12 Jam",
-      },
-      {
-        id: 2,
-        title: "Struktur Sel & Fungsi Organel",
-        name: "Struktur Sel & Fungsi Organel",
-        description:
-          "Membedakan sel hewan dan tumbuhan, serta peran ribosom, mitokondria, dan nukleus.",
-        category: "Science",
-        driveLink: "https://drive.google.com/drive/folders/bio202",
-        quizStatus: "Belum Ada",
-        progress: 65,
-        streak: 15,
-        color: "from-teal-400 to-emerald-500",
-        level: "Advanced",
-        duration: "18 Jam",
-      },
-      {
-        id: 3,
-        title: "Pengembangan Rute Dinamis Next.js",
-        name: "Pengembangan Rute Dinamis Next.js",
-        description:
-          "Bagaimana cara membuat halaman detail dinamis menggunakan router.push dan file folder opsional.",
-        category: "Coding",
-        driveLink: "https://drive.google.com/drive/folders/dev303",
-        quizStatus: "Sudah Ada",
-        progress: 92,
-        streak: 45,
-        color: "from-purple-400 to-pink-500",
-        level: "Beginner to Pro",
-        duration: "24 Jam",
-      },
-    ];
+  // Add Subject Form State
+  const [newMapelTitle, setNewMapelTitle] = useState("");
+  const [newMapelCategory, setNewMapelCategory] = useState("Coding");
+  const [newMapelDesc, setNewMapelDesc] = useState("");
+  const [newMapelDrive, setNewMapelDrive] = useState("");
+  const [newMapelVideo, setNewMapelVideo] = useState("");
 
-    const saved = localStorage.getItem("stry_subjects");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.map((item) => ({
-          ...item,
-          title: item.title || item.name,
-          driveLink:
-            item.driveLink ||
-            `https://drive.google.com/drive/folders/${item.id}`,
-          quizStatus:
-            item.quizStatus || (item.progress > 0 ? "Sudah Ada" : "Belum Ada"),
-        }));
-      } catch (e) {
-        console.error("Error parsing subjects from localStorage", e);
-      }
-    }
+  // Edit Subject Details State (Drill-Down Tab 1)
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editDrive, setEditDrive] = useState("");
+  const [editVideo, setEditVideo] = useState("");
 
-    localStorage.setItem("stry_subjects", JSON.stringify(defaultMock));
-    return defaultMock;
-  });
+  // Edit Syllabus State (Drill-Down Tab 2)
+  const [syllabus, setSyllabus] = useState([]);
 
-  // Form Fields State
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Coding");
-  const [driveLink, setDriveLink] = useState("");
-
-  // Edit Management
-  const [editingId, setEditingId] = useState(null);
+  // Edit Quiz State (Drill-Down Tab 3)
+  const [quizQuestions, setQuizQuestions] = useState([]);
 
   // Loading States
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
-  const [activeQuizContent, setActiveQuizContent] = useState(null);
-  const [showQuizResultModal, setShowQuizResultModal] = useState(false);
-  const [generatedQuestions, setGeneratedQuestions] = useState([]);
 
-  const getColorFromCategory = (cat) => {
-    const catLower = cat.toLowerCase();
-    if (
-      catLower.includes("math") ||
-      catLower.includes("mtk") ||
-      catLower.includes("hitung")
-    ) {
-      return "from-amber-400 to-orange-500";
-    } else if (
-      catLower.includes("science") ||
-      catLower.includes("ipa") ||
-      catLower.includes("biologi") ||
-      catLower.includes("fisika")
-    ) {
-      return "from-teal-400 to-emerald-500";
-    } else if (
-      catLower.includes("code") ||
-      catLower.includes("program") ||
-      catLower.includes("next")
-    ) {
-      return "from-purple-400 to-pink-500";
-    }
-    return "from-blue-400 to-indigo-500";
+  // Fetch subjects from DB
+  const loadSubjects = () => {
+    fetch("/api/subjects")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) {
+          setSubjects(data);
+          // If we are currently drilling down into a subject, update its local copy
+          if (selectedSubject) {
+            const updatedSubject = data.find((s) => s.id === selectedSubject.id);
+            if (updatedSubject) {
+              setSelectedSubject(updatedSubject);
+              setSyllabus(updatedSubject.syllabus ? JSON.parse(JSON.stringify(updatedSubject.syllabus)) : []);
+              setQuizQuestions(updatedSubject.questions ? JSON.parse(JSON.stringify(updatedSubject.questions)) : []);
+            }
+          }
+        }
+      })
+      .catch((err) => console.error("Error loading subjects:", err));
   };
 
-  // Save/Edit action handler
-  const handleSaveContent = (e) => {
+  useEffect(() => {
+    loadSubjects();
+  }, []);
+
+  // Handle drill-down init
+  const handleDrillDownInit = (subj) => {
+    setSelectedSubject(subj);
+    setEditTitle(subj.title || "");
+    setEditCategory(subj.category || "");
+    setEditDesc(subj.description || "");
+    setEditDrive(subj.driveLink || "");
+    setEditVideo(subj.videoUrl || "");
+    setSyllabus(subj.syllabus ? JSON.parse(JSON.stringify(subj.syllabus)) : []);
+    setQuizQuestions(subj.questions ? JSON.parse(JSON.stringify(subj.questions)) : []);
+    setDrillDownTab("materi");
+  };
+
+  // Create new subject Mapel
+  const handleCreateMapel = (e) => {
     e.preventDefault();
-    if (!title || !description || !driveLink) {
-      alert("Harap isi seluruh kolom formulir!");
+    if (!newMapelTitle || !newMapelDesc) {
+      alert("Judul dan Deskripsi wajib diisi!");
       return;
     }
 
     setIsSaving(true);
-    setTimeout(() => {
-      let updatedContents = [];
-      if (editingId !== null) {
-        // Edit Mode
-        updatedContents = contents.map((item) =>
-          item.id === editingId
-            ? { ...item, title, name: title, description, category, driveLink }
-            : item,
-        );
-        alert("Konten berhasil diperbarui!");
-      } else {
-        // Add Mode
-        const newItem = {
-          id: Date.now(),
-          title,
-          name: title,
-          description,
-          category,
-          driveLink,
-          quizStatus: "Belum Ada",
-          progress: 0,
-          streak: 0,
-          isFavorite: false,
-          level: "Beginner",
-          duration: "4 Jam",
-          hasCertificate: false,
-          color: getColorFromCategory(category),
-        };
-        updatedContents = [...contents, newItem];
-        alert("Konten baru berhasil disimpan ke database!");
-      }
+    const payload = {
+      title: newMapelTitle,
+      description: newMapelDesc,
+      category: newMapelCategory || "General",
+      driveLink: newMapelDrive || "",
+      videoUrl: newMapelVideo || "",
+      quizStatus: "Belum Ada",
+      questions: [],
+      syllabus: [],
+    };
 
-      setContents(updatedContents);
-      localStorage.setItem("stry_subjects", JSON.stringify(updatedContents));
-      setEditingId(null);
-
-      // Clear Form
-      setTitle("");
-      setDescription("");
-      setDriveLink("");
-      setIsSaving(false);
-    }, 800);
+    fetch("/api/subjects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsSaving(false);
+        if (data.error) {
+          alert("Error: " + data.error);
+          return;
+        }
+        loadSubjects();
+        setIsAddMapelModalOpen(false);
+        setNewMapelTitle("");
+        setNewMapelDesc("");
+        setNewMapelDrive("");
+        setNewMapelVideo("");
+        alert("Mata pelajaran baru berhasil ditambahkan!");
+      })
+      .catch((err) => {
+        setIsSaving(false);
+        console.error(err);
+        alert("Gagal menambahkan mata pelajaran.");
+      });
   };
 
-  // Trigger Edit Mode
-  const handleEditInit = (item) => {
-    setEditingId(item.id);
-    setTitle(item.title);
-    setDescription(item.description);
-    setCategory(item.category);
-    setDriveLink(item.driveLink);
+  // Update Subject Details (Drill-Down Tab 1 Save)
+  const handleSaveSubjectDetails = (e) => {
+    e.preventDefault();
+    if (!editTitle || !editDesc) {
+      alert("Judul dan Deskripsi wajib diisi!");
+      return;
+    }
+
+    setIsSaving(true);
+    const payload = {
+      id: selectedSubject.id,
+      title: editTitle,
+      description: editDesc,
+      category: editCategory,
+      driveLink: editDrive,
+      videoUrl: editVideo,
+      quizStatus: selectedSubject.quizStatus,
+      questions: selectedSubject.questions,
+      syllabus: selectedSubject.syllabus,
+    };
+
+    fetch("/api/subjects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsSaving(false);
+        if (data.error) {
+          alert("Error: " + data.error);
+          return;
+        }
+        loadSubjects();
+        alert("Detail mata pelajaran berhasil diperbarui!");
+      })
+      .catch((err) => {
+        setIsSaving(false);
+        console.error(err);
+        alert("Gagal memperbarui detail mata pelajaran.");
+      });
   };
 
-  // Delete item handler
-  const handleDeleteContent = (id) => {
-    if (
-      confirm("Apakah Anda yakin ingin menghapus konten ini dari database?")
-    ) {
-      const updated = contents.filter((item) => item.id !== id);
-      setContents(updated);
-      localStorage.setItem("stry_subjects", JSON.stringify(updated));
+  // Delete Subject Mapel
+  const handleDeleteMapel = (id) => {
+    if (confirm("Apakah Anda yakin ingin menghapus mata pelajaran ini beserta seluruh materi dan kuis di dalamnya?")) {
+      fetch("/api/subjects", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Error: " + data.error);
+            return;
+          }
+          loadSubjects();
+          setSelectedSubject(null);
+        })
+        .catch((err) => console.error("Error deleting Mapel:", err));
     }
   };
 
-  // Trigger Python backend FastAPI simulation for AI quiz generation
-  const handleGenerateQuizWithAI = (item) => {
-    setActiveQuizContent(item);
+  // Syllabus Materials Management (Tab 2)
+  const handleAddMateri = () => {
+    const newIdx = syllabus.length + 1;
+    const newMateri = {
+      title: `Materi ${newIdx} - Pengenalan`,
+      duration: "45 Menit",
+      videoUrl: "",
+      driveLink: "",
+      notes: "Tuliskan ringkasan materi di sini...",
+    };
+    setSyllabus([...syllabus, newMateri]);
+  };
+
+  const handleUpdateMateriField = (index, field, value) => {
+    const updated = [...syllabus];
+    updated[index][field] = value;
+    setSyllabus(updated);
+  };
+
+  const handleDeleteMateri = (index) => {
+    if (confirm("Apakah Anda yakin ingin menghapus materi ini dari daftar?")) {
+      const updated = syllabus.filter((_, idx) => idx !== index);
+      setSyllabus(updated);
+      saveSyllabusToDB(updated);
+    }
+  };
+
+  // Move Material Up in syllabus list
+  const handleMoveMateriUp = (index) => {
+    if (index === 0) return;
+    const updated = [...syllabus];
+    const temp = updated[index];
+    updated[index] = updated[index - 1];
+    updated[index - 1] = temp;
+    setSyllabus(updated);
+    saveSyllabusToDB(updated);
+  };
+
+  // Move Material Down in syllabus list
+  const handleMoveMateriDown = (index) => {
+    if (index === syllabus.length - 1) return;
+    const updated = [...syllabus];
+    const temp = updated[index];
+    updated[index] = updated[index + 1];
+    updated[index + 1] = temp;
+    setSyllabus(updated);
+    saveSyllabusToDB(updated);
+  };
+
+  // API Save for Syllabus array
+  const saveSyllabusToDB = (updatedSyllabus) => {
+    setIsSaving(true);
+    const payload = {
+      id: selectedSubject.id,
+      title: selectedSubject.title,
+      description: selectedSubject.description,
+      category: selectedSubject.category,
+      driveLink: selectedSubject.driveLink,
+      videoUrl: selectedSubject.videoUrl,
+      quizStatus: selectedSubject.quizStatus,
+      questions: selectedSubject.questions,
+      syllabus: updatedSyllabus,
+    };
+
+    fetch("/api/subjects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsSaving(false);
+        if (data.error) {
+          console.error(data.error);
+          return;
+        }
+        loadSubjects();
+      })
+      .catch((err) => {
+        setIsSaving(false);
+        console.error(err);
+      });
+  };
+
+  // AI Quiz Generator (Tab 3)
+  const handleGenerateQuizAI = () => {
+    if (!selectedSubject.title) return;
     setIsGeneratingQuiz(true);
 
-    // Simulating POST request to http://localhost:8000/api/generate-quiz
     setTimeout(() => {
-      // Set status to "Sudah Ada"
-      const updated = contents.map((c) =>
-        c.id === item.id ? { ...c, quizStatus: "Sudah Ada" } : c,
-      );
-      setContents(updated);
-      localStorage.setItem("stry_subjects", JSON.stringify(updated));
-
-      // Generated Mock Questions representing Python FastAPI Response
       const mockQuestions = [
         {
-          question: `Berdasarkan materi '${item.title}', apa aspek utama yang ditekankan dalam penjelasan tersebut?`,
+          question: `Berdasarkan materi '${selectedSubject.title}', apa aspek utama yang ditekankan dalam penjelasan tersebut?`,
           options: [
             "Pemahaman konsep dasar secara menyeluruh",
             "Menerapkan optimasi tingkat tinggi tanpa riset dasar",
@@ -245,7 +323,7 @@ export default function AdminDashboard() {
           correct: "Pemahaman konsep dasar secara menyeluruh",
         },
         {
-          question: `Manakah yang menggambarkan ringkasan paling akurat dari deskripsi: '${item.description.substring(0, 45)}...'?`,
+          question: `Manakah yang menggambarkan ringkasan paling akurat dari deskripsi kelas tersebut?`,
           options: [
             "Pembahasan fundamental mengenai materi terkait",
             "Analisis kesalahan alokasi memori pada CPU",
@@ -256,290 +334,878 @@ export default function AdminDashboard() {
         },
       ];
 
-      setGeneratedQuestions(mockQuestions);
+      setQuizQuestions(mockQuestions);
       setIsGeneratingQuiz(false);
-      setShowQuizResultModal(true);
+      saveQuizToDB(mockQuestions);
     }, 2000);
   };
 
-  return (
-    <main className="min-h-screen pb-24 bg-gradient-to-br from-indigo-950 via-slate-900 to-black text-white font-sans relative overflow-hidden">
-      {/* Decorative Blur Orbs */}
-      <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[5%] left-[-15%] w-[700px] h-[700px] rounded-full bg-purple-500/10 blur-[140px] pointer-events-none" />
+  const handleUpdateQuizField = (qIdx, field, value) => {
+    const updated = [...quizQuestions];
+    updated[qIdx][field] = value;
+    setQuizQuestions(updated);
+  };
 
-      <div className="max-w-5xl mx-auto px-6 pt-10 flex flex-col gap-8 relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between w-full border-b border-white/5 pb-6">
+  const handleUpdateQuizOption = (qIdx, oIdx, value) => {
+    const updated = [...quizQuestions];
+    const oldCorrectVal = updated[qIdx].correct;
+    const oldOptVal = updated[qIdx].options[oIdx];
+    
+    updated[qIdx].options[oIdx] = value;
+    if (oldCorrectVal === oldOptVal) {
+      updated[qIdx].correct = value;
+    }
+    setQuizQuestions(updated);
+  };
+
+  const handleAddQuizQuestion = () => {
+    const newQ = {
+      question: "Tulis pertanyaan kuis baru...",
+      options: ["Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D"],
+      correct: "Pilihan A",
+    };
+    setQuizQuestions([...quizQuestions, newQ]);
+  };
+
+  const handleDeleteQuizQuestion = (index) => {
+    if (confirm("Apakah Anda yakin ingin menghapus soal kuis ini?")) {
+      const updated = quizQuestions.filter((_, idx) => idx !== index);
+      setQuizQuestions(updated);
+      saveQuizToDB(updated);
+    }
+  };
+
+  const saveQuizToDB = (updatedQuestions) => {
+    setIsSaving(true);
+    const payload = {
+      id: selectedSubject.id,
+      title: selectedSubject.title,
+      description: selectedSubject.description,
+      category: selectedSubject.category,
+      driveLink: selectedSubject.driveLink,
+      videoUrl: selectedSubject.videoUrl,
+      quizStatus: updatedQuestions.length > 0 ? "Sudah Ada" : "Belum Ada",
+      questions: updatedQuestions,
+      syllabus: selectedSubject.syllabus,
+    };
+
+    fetch("/api/subjects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsSaving(false);
+        if (data.error) {
+          alert("Error: " + data.error);
+          return;
+        }
+        loadSubjects();
+        alert("Kuis berhasil disimpan ke database!");
+      })
+      .catch((err) => {
+        setIsSaving(false);
+        console.error(err);
+        alert("Gagal menyimpan kuis.");
+      });
+  };
+
+  return (
+    <main className="min-h-screen pb-24 app-theme-bg font-sans relative overflow-hidden flex justify-center">
+      <div className="max-w-6xl w-full px-4 sm:px-6 pt-8 sm:pt-10 flex flex-col gap-6 relative z-10">
+        
+        {/* HEADER */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full border-b border-[var(--border-color)] pb-6">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push("/")}
-              className="w-10 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center text-white transition-all cursor-pointer active:scale-95 shadow-md"
+              onClick={() => {
+                if (selectedSubject) {
+                  setSelectedSubject(null);
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="w-10 h-10 app-theme-card rounded-xl flex items-center justify-center text-[var(--text-color)] transition-all cursor-pointer active:scale-95 shadow-md flex-shrink-0"
               aria-label="Back"
             >
-              <ChevronLeft className="w-5 h-5 text-white/90" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex flex-col">
-              <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                <Database className="w-6 h-6 text-purple-400" /> Admin Dashboard
+              <h1 className="text-xl md:text-2xl font-black app-theme-text tracking-tight flex items-center gap-2">
+                <Database className="w-6 h-6" /> 
+                {selectedSubject ? selectedSubject.title : "Manajemen Belajar"}
               </h1>
-              <p className="text-xs text-white/50 font-medium">
-                Kelola materi pelajaran & otomatisasi kuis Stry
+              <p className="text-xs app-theme-text-muted font-medium">
+                {selectedSubject 
+                  ? `Mengelola bab materi & kuis untuk kelas ${selectedSubject.title}`
+                  : "Manajemen terpusat mata pelajaran, silabus materi, dan kuis otomatis"
+                }
               </p>
             </div>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-            ● Active DB Session
-          </span>
+
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => setIsHelpOpen(!isHelpOpen)}
+              className={`w-10 h-10 border rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-md cursor-pointer ${
+                isHelpOpen 
+                  ? "bg-black/10 dark:bg-white/20 border-[var(--border-color)] text-[var(--text-color)]"
+                  : "app-theme-card text-[var(--text-color)]/60 hover:text-[var(--text-color)]"
+              }`}
+              title="Petunjuk"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+
+            {!selectedSubject && (
+              <button
+                onClick={() => setIsAddMapelModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-[var(--text-color)] hover:bg-[var(--text-color)]/90 text-[var(--bg-color)] px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 border border-[var(--border-color)] cursor-pointer flex-grow sm:flex-grow-0"
+              >
+                <Plus className="w-4 h-4" /> + Tambah Mapel
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Top: Two column layout for form & logs */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          {/* Left Block: Form Input (2 columns span) */}
-          <div className="md:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md shadow-2xl relative overflow-hidden flex flex-col gap-5">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 opacity-5 blur-xl pointer-events-none" />
-
-            <h3 className="text-sm font-bold uppercase tracking-wider text-purple-300">
-              {editingId !== null
-                ? "Edit Detail Materi"
-                : "Input Konten Pembelajaran Baru"}
-            </h3>
-
-            <form onSubmit={handleSaveContent} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Judul */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-white/40 font-bold uppercase tracking-wider pl-1">
-                    Judul Materi
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Pengenalan Integrasi API"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
-                  />
+        {/* HELP CARD */}
+        <AnimatePresence>
+          {isHelpOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="w-full overflow-hidden"
+            >
+              <div className="app-theme-card rounded-3xl p-5 shadow-xl flex gap-4 items-start">
+                <div className="w-10 h-10 rounded-xl bg-black/10 dark:bg-white/10 border border-[var(--border-color)] flex items-center justify-center text-[var(--text-color)] flex-shrink-0">
+                  <Info className="w-5 h-5" />
                 </div>
-
-                {/* Kategori */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] text-white/40 font-bold uppercase tracking-wider pl-1">
-                    Kategori
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Masukkan kategori baru..."
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
-                  />
+                <div className="flex flex-col gap-1.5 text-xs app-theme-text-muted">
+                  <h3 className="font-bold app-theme-text">Panduan Manajemen Belajar</h3>
+                  {selectedSubject ? (
+                    <ul className="list-disc list-inside flex flex-col gap-1 font-medium">
+                      <li>Tab <span className="app-theme-text font-bold">Daftar Materi</span> memungkinkan Anda menambah sub-materi baru, mengubah link video, durasi belajar, dan menyetel urutan materi menggunakan tanda panah.</li>
+                      <li>Tab <span className="app-theme-text font-bold">Detail Mapel</span> berguna untuk mengubah informasi utama mata pelajaran (Judul, Kategori, Deskripsi).</li>
+                      <li>Tab <span className="app-theme-text font-bold">Kelola Kuis</span> menyatukan penyuntingan kuis kelas baik secara manual maupun menggunakan AI Generator.</li>
+                    </ul>
+                  ) : (
+                    <ul className="list-disc list-inside flex flex-col gap-1 font-medium">
+                      <li>Klik tombol <span className="app-theme-text font-bold">+ Tambah Mapel</span> di atas untuk menambahkan mata pelajaran baru.</li>
+                      <li>Klik tombol <span className="app-theme-text font-bold">Edit / Detail</span> pada tabel untuk melakukan *drill-down* ke dalam manajemen materi rinci dan kuis.</li>
+                    </ul>
+                  )}
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-              {/* Link Google Drive */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-white/40 font-bold uppercase tracking-wider pl-1">
-                  Link Google Drive (Video/Materi)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://drive.google.com/file/d/..."
-                  value={driveLink}
-                  onChange={(e) => setDriveLink(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
-                />
+        {/* MAIN AREA */}
+        <div className="w-full">
+          {!selectedSubject ? (
+            /* ============================================================== */
+            /* MODE MATA PELAJARAN (MAIN LIST)                               */
+            /* ============================================================== */
+            <div className="w-full flex flex-col gap-5">
+              
+              {/* Table for Desktop */}
+              <div className="hidden md:block overflow-x-auto w-full app-theme-card rounded-3xl shadow-xl">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold tracking-wider">
+                      <th className="p-4.5">Nama Mata Pelajaran</th>
+                      <th className="p-4.5">Kategori</th>
+                      <th className="p-4.5 text-center">Jumlah Sub-Materi</th>
+                      <th className="p-4.5 text-center">Status Kuis</th>
+                      <th className="p-4.5 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subjects.map((subj) => (
+                      <tr
+                        key={subj.id}
+                        className="border-b border-[var(--border-color)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <td className="p-4.5 font-bold app-theme-text text-sm">
+                          {subj.title}
+                        </td>
+                        <td className="p-4.5">
+                          <span className="px-2.5 py-1 bg-black/5 dark:bg-white/5 rounded-lg border border-[var(--border-color)] font-semibold text-[10px] text-[var(--text-color)] uppercase tracking-wider">
+                            {subj.category}
+                          </span>
+                        </td>
+                        <td className="p-4.5 text-center font-bold app-theme-text">
+                          {subj.syllabus ? subj.syllabus.length : 0} Bab
+                        </td>
+                        <td className="p-4.5 text-center">
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold border border-[var(--border-color)] bg-black/5 dark:bg-white/5 text-[var(--text-color)]"
+                          >
+                            {subj.quizStatus === "Sudah Ada" ? (
+                              <CheckCircle className="w-3 h-3 text-[var(--text-color)]" />
+                            ) : (
+                              <XCircle className="w-3 h-3 text-[var(--text-color)]/40" />
+                            )}
+                            {subj.quizStatus === "Sudah Ada" ? "Kuis Aktif" : "Belum Ada"}
+                          </span>
+                        </td>
+                        <td className="p-4.5 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleDrillDownInit(subj)}
+                              className="px-3.5 py-2 bg-[var(--text-color)] hover:bg-[var(--text-color)]/90 text-[var(--bg-color)] rounded-xl font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-md border border-[var(--border-color)]"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" /> Kelola Detail & Materi
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMapel(subj.id)}
+                              className="p-2 bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                              title="Hapus Mapel"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {subjects.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="p-8 text-center app-theme-text-muted italic">
+                          Belum ada mata pelajaran. Klik "+ Tambah Mapel" di atas.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Deskripsi */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-white/40 font-bold uppercase tracking-wider pl-1">
-                  Deskripsi Materi
-                </label>
-                <textarea
-                  placeholder="Deskripsikan secara singkat topik, durasi belajar, dan apa yang dipelajari..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner resize-none"
-                />
-              </div>
-
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 mt-2 border-t border-white/5 pt-4">
-                {editingId !== null && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingId(null);
-                      setTitle("");
-                      setDescription("");
-                      setDriveLink("");
-                    }}
-                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all cursor-pointer active:scale-95"
+              {/* Cards for Mobile */}
+              <div className="block md:hidden flex flex-col gap-4">
+                {subjects.map((subj) => (
+                  <div
+                    key={subj.id}
+                    className="app-theme-card rounded-3xl p-5 flex flex-col gap-3.5 shadow-lg"
                   >
-                    Batal
-                  </button>
-                )}
+                    <div className="flex justify-between items-start w-full">
+                      <div className="flex flex-col gap-1 max-w-[70%]">
+                        <span className="px-2 py-0.5 bg-black/10 dark:bg-white/10 border border-[var(--border-color)] text-[9px] font-bold text-[var(--text-color)] rounded-md self-start uppercase tracking-wider">
+                          {subj.category}
+                        </span>
+                        <h3 className="font-bold app-theme-text text-sm mt-1 leading-snug">
+                          {subj.title}
+                        </h3>
+                      </div>
+                      
+                      <span
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-[var(--border-color)] bg-black/5 dark:bg-white/5 text-[var(--text-color)]"
+                      >
+                        {subj.quizStatus === "Sudah Ada" ? "Kuis Aktif" : "Belum Ada"}
+                      </span>
+                    </div>
 
+                    <div className="text-[10px] app-theme-text-muted border-t border-[var(--border-color)] pt-3">
+                      Jumlah Sub-Materi: <span className="font-bold app-theme-text">{subj.syllabus ? subj.syllabus.length : 0} Bab</span>
+                    </div>
+
+                    <div className="flex justify-end gap-2 border-t border-[var(--border-color)] pt-3 mt-1">
+                      <button
+                        onClick={() => handleDrillDownInit(subj)}
+                        className="flex-grow py-2 bg-[var(--text-color)] hover:bg-[var(--text-color)]/90 rounded-xl text-[var(--bg-color)] text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md border border-[var(--border-color)]"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" /> Kelola Detail & Materi
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMapel(subj.id)}
+                        className="px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-red-400 flex items-center justify-center cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {subjects.length === 0 && (
+                  <div className="app-theme-card rounded-3xl p-10 text-center italic text-xs app-theme-text-muted">
+                    Belum ada mata pelajaran. Klik "+ Tambah Mapel" di atas.
+                  </div>
+                )}
+              </div>
+
+            </div>
+          ) : (
+            /* ============================================================== */
+            /* MODE DETAIL MATERI & DRILL-DOWN (EDIT MODE)                    */
+            /* ============================================================== */
+            <div className="w-full flex flex-col gap-6">
+              
+              {/* Drill-down Back button bar */}
+              <div className="flex items-center justify-between app-theme-card rounded-2xl p-3">
                 <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md active:scale-95 hover:scale-[1.01] transition-all cursor-pointer flex items-center gap-1.5 border border-white/10 disabled:opacity-50"
+                  onClick={() => setSelectedSubject(null)}
+                  className="flex items-center gap-1.5 text-xs app-theme-text hover:opacity-85 transition-colors font-bold cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" />{" "}
-                  {isSaving
-                    ? "Menyimpan..."
-                    : editingId !== null
-                      ? "Perbarui Konten"
-                      : "Simpan Konten"}
+                  <ChevronLeft className="w-4 h-4" /> Kembali ke Daftar Mapel
+                </button>
+                <span className="text-[10px] app-theme-text-muted font-bold uppercase tracking-wider">
+                  Drill-Down Workspace
+                </span>
+              </div>
+
+              {/* Accordion/Tabs inside Edit Screen */}
+              <div className="flex gap-2 p-1 app-theme-card rounded-2xl w-full">
+                <button
+                  onClick={() => setDrillDownTab("materi")}
+                  className={`flex-1 py-3 rounded-xl text-center text-xs font-bold transition-all cursor-pointer ${
+                    drillDownTab === "materi"
+                      ? "bg-[var(--text-color)] text-[var(--bg-color)] shadow-md"
+                      : "text-[var(--text-color)]/60 hover:text-[var(--text-color)]"
+                  }`}
+                >
+                  Daftar Materi ({syllabus.length})
+                </button>
+                <button
+                  onClick={() => setDrillDownTab("details")}
+                  className={`flex-1 py-3 rounded-xl text-center text-xs font-bold transition-all cursor-pointer ${
+                    drillDownTab === "details"
+                      ? "bg-[var(--text-color)] text-[var(--bg-color)] shadow-md"
+                      : "text-[var(--text-color)]/60 hover:text-[var(--text-color)]"
+                  }`}
+                >
+                  Detail Mapel
+                </button>
+                <button
+                  onClick={() => setDrillDownTab("quiz")}
+                  className={`flex-1 py-3 rounded-xl text-center text-xs font-bold transition-all cursor-pointer ${
+                    drillDownTab === "quiz"
+                      ? "bg-[var(--text-color)] text-[var(--bg-color)] shadow-md"
+                      : "text-[var(--text-color)]/60 hover:text-[var(--text-color)]"
+                  }`}
+                >
+                  Kelola Kuis ({quizQuestions.length})
                 </button>
               </div>
-            </form>
-          </div>
 
-          {/* Right Block: Python Backend API Documentation Info */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md shadow-2xl relative overflow-hidden flex flex-col gap-4">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 blur-xl pointer-events-none" />
-
-            <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-              <Code className="w-4 h-4" /> Backend API Info
-            </h3>
-
-            <p className="text-[11px] text-white/60 leading-relaxed font-medium">
-              Tombol{" "}
-              <span className="text-purple-300 font-bold">
-                Generate Quiz with AI
-              </span>{" "}
-              mengirimkan data materi ke endpoint Python FastAPI berikut:
-            </p>
-
-            <div className="bg-black/35 rounded-2xl p-4 border border-white/5 flex flex-col gap-1 font-mono text-[9px] text-purple-200">
-              <span className="text-emerald-400 font-bold">
-                POST /api/generate-quiz
-              </span>
-              <span className="text-white/40">Host: http://localhost:8000</span>
-              <span className="text-white/40 mt-1">Payload:</span>
-              <span className="text-purple-300">{"{"}</span>
-              <span className="pl-3">&quot;title&quot;: &quot;...&quot;,</span>
-              <span className="pl-3">&quot;description&quot;: &quot;...&quot;,</span>
-              <span className="pl-3">&quot;category&quot;: &quot;...&quot;,</span>
-              <span className="pl-3">&quot;drive_link&quot;: &quot;...&quot;</span>
-              <span className="text-purple-300">{"}"}</span>
-              <span className="text-white/40 mt-2">
-                Diproses di file <span className="underline">backend/app.py</span>.
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Section: Content List Table */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md shadow-2xl relative overflow-hidden flex flex-col gap-4">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-500 opacity-5 blur-3xl pointer-events-none" />
-
-          <h3 className="text-sm font-bold uppercase tracking-wider text-purple-300">
-            Daftar Konten Pembelajaran
-          </h3>
-
-          <div className="overflow-x-auto w-full border border-white/5 rounded-2xl">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-white/5 border-b border-white/10 text-white/50 font-bold tracking-wider">
-                  <th className="p-4">Judul Materi</th>
-                  <th className="p-4">Kategori</th>
-                  <th className="p-4">Drive Link</th>
-                  <th className="p-4 text-center">Status Kuis</th>
-                  <th className="p-4 text-center">Aksi Kuis</th>
-                  <th className="p-4 text-center">Modifikasi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contents.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                  >
-                    <td className="p-4 font-bold text-white max-w-xs truncate">
-                      {item.title}
-                    </td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 bg-white/5 rounded-lg border border-white/10 font-semibold text-[10px] text-purple-200">
-                        {item.category}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <a
-                        href={item.driveLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-purple-300 hover:text-purple-200 flex items-center gap-1 font-medium transition-colors hover:underline"
-                      >
-                        Folder Drive <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </td>
-                    <td className="p-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold border ${
-                          item.quizStatus === "Sudah Ada"
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                            : "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                        }`}
-                      >
-                        {item.quizStatus === "Sudah Ada" ? (
-                          <CheckCircle className="w-3 h-3" />
-                        ) : (
-                          <XCircle className="w-3 h-3" />
-                        )}
-                        {item.quizStatus}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
+              {/* TABS CONTENT */}
+              <div className="w-full">
+                
+                {/* SUB-TAB 1: DAFTAR MATERI */}
+                {drillDownTab === "materi" && (
+                  <div className="flex flex-col gap-5 w-full">
+                    <div className="flex justify-between items-center w-full">
+                      <h3 className="text-xs font-bold uppercase tracking-wider app-theme-text-muted">
+                        Sub-Materi & Silabus Kelas
+                      </h3>
                       <button
-                        onClick={() => handleGenerateQuizWithAI(item)}
-                        disabled={isGeneratingQuiz}
-                        className="px-3.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 hover:text-purple-200 rounded-lg font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1.5 mx-auto active:scale-95 disabled:opacity-50"
+                        onClick={handleAddMateri}
+                        className="flex items-center gap-1.5 bg-[var(--text-color)] hover:bg-[var(--text-color)]/90 text-[var(--bg-color)] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 border border-[var(--border-color)] cursor-pointer"
                       >
-                        <Cpu className="w-3.5 h-3.5 animate-pulse" /> AI Quiz
+                        <Plus className="w-3.5 h-3.5" /> + Tambah Materi
                       </button>
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleEditInit(item)}
-                          className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/70 hover:text-white transition-colors cursor-pointer"
-                          title="Edit"
+                    </div>
+
+                    {/* Drag-and-drop / Arrow based Ordering list */}
+                    <div className="flex flex-col gap-4 w-full">
+                      {syllabus.map((mat, idx) => (
+                        <div
+                          key={idx}
+                          className="app-theme-card rounded-3xl p-5 flex flex-col gap-4 shadow-lg relative overflow-hidden"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                          {/* Material Card Header: Title & Ordering Controls */}
+                          <div className="flex items-center justify-between w-full border-b border-[var(--border-color)] pb-3">
+                            <span className="px-2.5 py-0.5 bg-black/10 dark:bg-white/10 border border-[var(--border-color)] text-[9px] font-bold uppercase tracking-wider text-[var(--text-color)] rounded-md">
+                              Materi {idx + 1}
+                            </span>
+
+                            {/* Up/Down Arrow Ordering System */}
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleMoveMateriUp(idx)}
+                                disabled={idx === 0}
+                                className="p-1 app-theme-card rounded-lg text-[var(--text-color)]/70 hover:text-[var(--text-color)] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Naikkan Urutan"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveMateriDown(idx)}
+                                disabled={idx === syllabus.length - 1}
+                                className="p-1 app-theme-card rounded-lg text-[var(--text-color)]/70 hover:text-[var(--text-color)] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Turunkan Urutan"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+
+                              <div className="w-px h-4 bg-[var(--border-color)] mx-1.5" />
+
+                              <button
+                                onClick={() => handleDeleteMateri(idx)}
+                                className="p-1 bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                                title="Hapus Materi"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Card Fields Form Layout */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] app-theme-text-muted font-bold uppercase tracking-wider pl-1">
+                                Nama Materi
+                              </label>
+                              <input
+                                type="text"
+                                value={mat.title}
+                                onChange={(e) => handleUpdateMateriField(idx, "title", e.target.value)}
+                                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/20 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] transition-all shadow-inner font-bold"
+                              />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] app-theme-text-muted font-bold uppercase tracking-wider pl-1">
+                                Durasi Materi (Menit/Jam)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: 45 Menit atau 1 Jam"
+                                value={mat.duration}
+                                onChange={(e) => handleUpdateMateriField(idx, "duration", e.target.value)}
+                                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/20 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] transition-all shadow-inner font-semibold"
+                              />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] app-theme-text-muted font-bold uppercase tracking-wider pl-1">
+                                Link Video Pembelajaran (Opsional)
+                              </label>
+                              <input
+                                type="url"
+                                placeholder="https://www.youtube.com/watch?v=..."
+                                value={mat.videoUrl || ""}
+                                onChange={(e) => handleUpdateMateriField(idx, "videoUrl", e.target.value)}
+                                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/20 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] transition-all shadow-inner"
+                              />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] app-theme-text-muted font-bold uppercase tracking-wider pl-1">
+                                Link Drive / Dokumen Materi (Opsional)
+                              </label>
+                              <input
+                                type="url"
+                                placeholder="https://drive.google.com/file/d/..."
+                                value={mat.driveLink || ""}
+                                onChange={(e) => handleUpdateMateriField(idx, "driveLink", e.target.value)}
+                                className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/20 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] transition-all shadow-inner"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[9px] app-theme-text-muted font-bold uppercase tracking-wider pl-1">
+                              Catatan Pendukung (Teks/Teori)
+                            </label>
+                            <textarea
+                              rows="3"
+                              placeholder="Masukkan teori ringkas atau instruksi belajar untuk sub-materi ini..."
+                              value={mat.notes || ""}
+                              onChange={(e) => handleUpdateMateriField(idx, "notes", e.target.value)}
+                              className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/20 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] transition-all shadow-inner resize-none font-sans leading-relaxed"
+                            />
+                          </div>
+
+                          {/* Save button for this individual material */}
+                          <div className="flex justify-end border-t border-[var(--border-color)] pt-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveSyllabusToDB(syllabus);
+                                alert(`Progres materi '${mat.title}' berhasil disimpan!`);
+                              }}
+                              disabled={isSaving}
+                              className="px-5 py-2 bg-[var(--text-color)] hover:bg-[var(--text-color)]/90 text-[var(--bg-color)] rounded-xl text-[10px] font-bold shadow-md active:scale-95 transition-all cursor-pointer border border-[var(--border-color)] disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <Save className="w-3.5 h-3.5" /> Simpan Materi
+                            </button>
+                          </div>
+
+                        </div>
+                      ))}
+
+                      {syllabus.length === 0 && (
+                        <div className="p-10 text-center text-xs app-theme-text-muted italic app-theme-card border-dashed">
+                          Belum ada silabus materi. Klik "+ Tambah Materi" di atas untuk memulai.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-TAB 2: DETAIL MAPEL */}
+                {drillDownTab === "details" && (
+                  <div className="app-theme-card rounded-3xl p-6 shadow-xl max-w-2xl mx-auto flex flex-col gap-6">
+                    <div className="border-b border-[var(--border-color)] pb-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wider app-theme-text">
+                        Edit Detail Mata Pelajaran
+                      </h3>
+                      <p className="text-[10px] app-theme-text-muted font-semibold mt-1 uppercase tracking-wider">
+                        Perbarui identitas dasar kelas pelajaran
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSaveSubjectDetails} className="flex flex-col gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                            Judul Mapel
+                          </label>
+                          <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                            Kategori Mapel
+                          </label>
+                          <input
+                            type="text"
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                          Deskripsi Kelas / Tentang Kelas
+                        </label>
+                        <textarea
+                          rows="4"
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner resize-none font-sans leading-relaxed"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                          Link Google Drive Utama (Opsional)
+                        </label>
+                        <input
+                          type="url"
+                          value={editDrive}
+                          onChange={(e) => setEditDrive(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                          Link Video Utama (Opsional)
+                        </label>
+                        <input
+                          type="url"
+                          value={editVideo}
+                          onChange={(e) => setEditVideo(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-3 border-t border-white/5 pt-5">
                         <button
-                          onClick={() => handleDeleteContent(item.id)}
-                          className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors cursor-pointer"
-                          title="Hapus"
+                          type="submit"
+                          disabled={isSaving}
+                          className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md active:scale-95 hover:scale-[1.01] transition-all cursor-pointer border border-white/10 disabled:opacity-50 flex items-center gap-1"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Save className="w-4 h-4" /> {isSaving ? "Menyimpan..." : "Simpan Detail Mapel"}
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* SUB-TAB 3: KELOLA KUIS */}
+                {drillDownTab === "quiz" && (
+                  <div className="flex flex-col gap-5 max-w-2xl mx-auto w-full">
+                    
+                    {/* AI quiz panel */}
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col gap-3 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 blur-xl pointer-events-none" />
+                      
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col">
+                          <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-emerald-400" /> AI Quiz Generator (Gemini-Pro)
+                          </h4>
+                          <span className="text-[9px] text-white/40 font-semibold mt-0.5 uppercase tracking-wider">
+                            Buat kuis otomatis berdasarkan rangkuman kelas
+                          </span>
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={handleGenerateQuizAI}
+                          disabled={isGeneratingQuiz}
+                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl text-[10px] font-bold shadow-md active:scale-95 transition-all cursor-pointer border border-white/10 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <Cpu className="w-3.5 h-3.5" /> Generate AI
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quiz editor list */}
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-center px-1">
+                        <h4 className="text-[10px] text-white/50 font-bold uppercase tracking-wider">
+                          Soal Kuis ({quizQuestions.length})
+                        </h4>
+                        <button
+                          onClick={handleAddQuizQuestion}
+                          className="text-[10px] text-purple-300 hover:text-white transition-colors font-bold cursor-pointer"
+                        >
+                          + Tambah Pertanyaan Manual
+                        </button>
+                      </div>
+
+                      {quizQuestions.map((q, qIdx) => (
+                        <div
+                          key={qIdx}
+                          className="bg-white/5 border border-white/5 rounded-2xl p-4.5 flex flex-col gap-4 relative"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuizQuestion(qIdx)}
+                            className="absolute top-4 right-4 p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-all cursor-pointer"
+                            title="Hapus Soal"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[9px] text-white/40 font-bold uppercase tracking-wider">
+                              Soal {qIdx + 1}
+                            </label>
+                            <input
+                              type="text"
+                              value={q.question}
+                              onChange={(e) => handleUpdateQuizField(qIdx, "question", e.target.value)}
+                              className="w-[calc(100%-2.5rem)] bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner font-semibold"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <label className="text-[9px] text-white/40 font-bold uppercase tracking-wider pl-0.5">
+                              Pilihan Jawaban (Klik bulatan untuk jawaban benar)
+                            </label>
+                            <div className="grid grid-cols-1 gap-2">
+                              {q.options.map((opt, oIdx) => (
+                                <div key={oIdx} className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateQuizField(qIdx, "correct", opt)}
+                                    className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all cursor-pointer ${
+                                      q.correct === opt
+                                        ? "border-emerald-400 bg-emerald-500/10 text-emerald-400"
+                                        : "border-white/20 bg-white/5 text-white/30"
+                                    }`}
+                                  >
+                                    {q.correct === opt && <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />}
+                                  </button>
+                                  <input
+                                    type="text"
+                                    value={opt}
+                                    onChange={(e) => handleUpdateQuizOption(qIdx, oIdx, e.target.value)}
+                                    className="flex-grow bg-white/5 border border-white/10 rounded-xl py-2 px-3 text-[10px] text-white focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                        </div>
+                      ))}
+
+                      {quizQuestions.length > 0 && (
+                        <button
+                          onClick={() => saveQuizToDB(quizQuestions)}
+                          disabled={isSaving}
+                          className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 rounded-xl text-center text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer border border-white/10 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        >
+                          <Save className="w-4 h-4" /> Simpan Kuis Mapel
+                        </button>
+                      )}
+
+                      {quizQuestions.length === 0 && (
+                        <div className="p-8 text-center text-[11px] text-white/30 italic bg-white/5 border border-white/5 border-dashed rounded-2xl">
+                          Belum ada soal kuis. Gunakan generator AI di atas.
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
+
+            </div>
+          )}
         </div>
+
       </div>
 
-      {/* Loading Modal for AI Quiz Generation */}
+      {/* MODAL: ADD MAPEL SUBJECT */}
+      <AnimatePresence>
+        {isAddMapelModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddMapelModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="relative max-w-lg w-full h-[90vh] sm:h-auto sm:max-h-[85vh] bg-slate-900 border border-white/15 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 flex flex-col gap-6 shadow-2xl overflow-hidden mt-auto sm:mt-0"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500 to-indigo-500 opacity-10 blur-2xl pointer-events-none" />
+
+              <div className="flex justify-between items-start border-b border-white/5 pb-4 flex-shrink-0">
+                <div className="flex flex-col">
+                  <h3 className="text-base font-bold uppercase tracking-wider text-purple-300">
+                    Tambah Mata Pelajaran Baru
+                  </h3>
+                  <p className="text-[10px] text-white/40 font-semibold mt-1 uppercase tracking-wider">
+                    Buat wadah kelas baru di perpustakaan Studee
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAddMapelModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors cursor-pointer active:scale-95"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Form */}
+              <div className="flex-grow overflow-y-auto pr-1 no-scrollbar flex flex-col gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                      Nama Mapel
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Sejarah, Biologi..."
+                      value={newMapelTitle}
+                      onChange={(e) => setNewMapelTitle(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                      Kategori
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: IPS, Science, Coding..."
+                      value={newMapelCategory}
+                      onChange={(e) => setNewMapelCategory(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                    Deskripsi / Tentang Kelas
+                  </label>
+                  <textarea
+                    rows="4"
+                    placeholder="Tulis ringkasan penjelasan tentang mata pelajaran baru ini..."
+                    value={newMapelDesc}
+                    onChange={(e) => setNewMapelDesc(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner resize-none font-sans leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                    Link Google Drive Utama (Opsional)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    value={newMapelDrive}
+                    onChange={(e) => setNewMapelDrive(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-white/50 font-bold uppercase tracking-wider pl-1">
+                    Link Video Utama (Opsional)
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://www.youtube.com/..."
+                    value={newMapelVideo}
+                    onChange={(e) => setNewMapelVideo(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all shadow-inner"
+                  />
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex justify-end gap-3 border-t border-white/5 pt-5 flex-shrink-0 mt-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsAddMapelModalOpen(false)}
+                  className="px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all cursor-pointer active:scale-95"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateMapel}
+                  disabled={isSaving}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer border border-white/10 disabled:opacity-50"
+                >
+                  {isSaving ? "Menyimpan..." : "Tambah Mapel"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* AI generator overlay loader */}
       <AnimatePresence>
         {isGeneratingQuiz && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center px-6"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center px-6"
           >
-            <div className="max-w-sm w-full bg-slate-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center text-center gap-5 shadow-2xl relative overflow-hidden">
+            <div className="max-w-sm w-full bg-slate-900 border border-white/10 rounded-[2rem] p-8 flex flex-col items-center text-center gap-5 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 opacity-10 blur-2xl pointer-events-none" />
 
-              {/* Spinner */}
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <div className="absolute inset-0 border-4 border-purple-500/20 rounded-full" />
                 <div className="absolute inset-0 border-4 border-t-purple-400 rounded-full animate-spin" />
@@ -548,112 +1214,17 @@ export default function AdminDashboard() {
 
               <div className="flex flex-col gap-1.5">
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                  Generating Quiz via AI...
+                  Generating AI Quiz...
                 </h3>
                 <p className="text-[10px] text-white/40 leading-relaxed font-semibold">
-                  Menghubungkan ke API backend Python FastAPI (
-                  <span className="text-purple-300">FastAPI gemini-pro</span>)
-                  untuk membaca transkrip Google Drive & membuat kuis otomatis.
+                  Menganalisis materi pelajaran via backend FastAPI Python untuk menyusun soal kuis otomatis.
                 </p>
               </div>
-
-              <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 font-mono text-[9px] text-purple-200 truncate">
-                POST /api/generate-quiz ...
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Success Modal showing Generated Quiz Details */}
-      <AnimatePresence>
-        {showQuizResultModal && activeQuizContent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center px-6"
-          >
-            <div className="max-w-md w-full bg-slate-900 border border-white/15 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl relative overflow-hidden max-h-[85vh] overflow-y-auto">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 blur-2xl pointer-events-none" />
-
-              <div className="flex justify-between items-start w-full border-b border-white/5 pb-4">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                    AI Generation Success
-                  </span>
-                  <h3 className="text-sm font-black text-white mt-1 leading-snug truncate max-w-xs">
-                    {activeQuizContent.title}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowQuizResultModal(false)}
-                  className="text-white/40 hover:text-white/70 transition-colors p-1"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <p className="text-[10px] text-white/50 leading-relaxed font-medium">
-                Berikut adalah 2 buah soal kuis pilihan ganda yang berhasil
-                disusun secara otomatis oleh Python backend FastAPI menggunakan
-                transkrip materi:
-              </p>
-
-              <div className="flex flex-col gap-4">
-                {generatedQuestions.map((q, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-3"
-                  >
-                    <h4 className="text-[11px] font-bold text-white leading-relaxed">
-                      {idx + 1}. {q.question}
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2 pl-1">
-                      {q.options.map((opt, oIdx) => (
-                        <div
-                          key={oIdx}
-                          className={`p-2.5 rounded-xl border text-[10px] font-semibold flex items-center justify-between ${
-                            opt === q.correct
-                              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                              : "bg-white/5 border-white/5 text-white/60"
-                          }`}
-                        >
-                          <span>{opt}</span>
-                          {opt === q.correct && (
-                            <span className="text-[8px] font-bold uppercase bg-emerald-500/20 px-2 py-0.5 rounded">
-                              Correct
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowQuizResultModal(false)}
-                className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer border border-white/10"
-              >
-                Tutup & Simpan Kuis
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </main>
   );
 }

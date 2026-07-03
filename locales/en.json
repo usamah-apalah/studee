@@ -5,7 +5,7 @@
     "cancel": "Cancel"
   },
   "dashboard": {
-    "title": "Stry",
+    "title": "Studee",
     "search": "Search",
     "notification": "Notification",
     "weeklyStreak": "Weekly Streak Calendar",
@@ -30,7 +30,7 @@
     "adminDashboard": "Admin Dashboard",
     "logOut": "Log Out",
     "languageModalTitle": "Choose Language",
-    "languageModalDesc": "Change Stry application language"
+    "languageModalDesc": "Change Studee application language"
   },
   "profile": {
     "title": "My Profile",

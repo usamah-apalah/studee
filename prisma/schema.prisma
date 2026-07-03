@@ -22,3 +22,14 @@ model DailyLog {
   date      DateTime @default(now())
   duration  Int
 }
+model Subject {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  category    String
+  driveLink   String
+  videoUrl    String?
+  quizStatus  String   @default("Belum Ada")
+  questions   Json?    // Menyimpan daftar soal kuis hasil generate AI
+  syllabus    Json?    // Menyimpan daftar sub-materi (silabus)
+}

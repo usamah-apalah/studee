@@ -5,13 +5,13 @@ import React, { createContext, useContext, useState } from "react";
 const StreakContext = createContext(undefined);
 
 const defaultDays = [
-  { name: "Sun", active: true, min: "40m" },
-  { name: "Mon", active: true, min: "50m" },
-  { name: "Tue", active: false, min: "-", isToday: true },
-  { name: "Wed", active: false, min: "-" },
-  { name: "Thu", active: false, min: "-" },
-  { name: "Fri", active: false, min: "-" },
-  { name: "Sat", active: false, min: "-" },
+  { name: "Min", active: true, min: "40m" },
+  { name: "Sen", active: true, min: "50m" },
+  { name: "Sel", active: false, min: "-", isToday: true },
+  { name: "Rab", active: false, min: "-" },
+  { name: "Kam", active: false, min: "-" },
+  { name: "Jum", active: false, min: "-" },
+  { name: "Sab", active: false, min: "-" },
 ];
 
 export function StreakProvider({ children }) {
@@ -20,11 +20,11 @@ export function StreakProvider({ children }) {
 
   React.useEffect(() => {
     try {
-      const savedData = localStorage.getItem("stry_streak_data");
+      const savedData = localStorage.getItem("studee_streak_data");
       if (savedData) {
         setStreakData(JSON.parse(savedData));
       }
-      const savedStreak = localStorage.getItem("stry_total_streak");
+      const savedStreak = localStorage.getItem("studee_total_streak");
       if (savedStreak) {
         setTotalStreak(parseInt(savedStreak, 10) || 2);
       }
@@ -48,8 +48,8 @@ export function StreakProvider({ children }) {
       setTotalStreak(newTotal);
 
       // Save to localStorage
-      localStorage.setItem("stry_total_streak", newTotal.toString());
-      localStorage.setItem("stry_streak_data", JSON.stringify(updatedData));
+      localStorage.setItem("studee_total_streak", newTotal.toString());
+      localStorage.setItem("studee_streak_data", JSON.stringify(updatedData));
     }
   };
 

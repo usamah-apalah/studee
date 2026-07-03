@@ -23,11 +23,11 @@ const lessonsData = {
     name: "Matematika (MTK)",
     level: "Intermediate",
     description: "Kuasai konsep-konsep matematika esensial mulai dari Aljabar Linear, Kalkulus Integral, hingga Teori Probabilitas dengan visualisasi interaktif.",
-    color: "from-amber-400 to-orange-500",
     lessonsCount: 16,
     quizzesCount: 8,
     hoursCount: 12,
     iconType: "mtk",
+    videoUrl: "https://www.youtube.com/watch?v=fNk_zzaMoEs",
     syllabus: [
       { title: "Pengenalan Aljabar Linear", duration: "45 Menit" },
       { title: "Matriks & Transformasi Ruang", duration: "60 Menit" },
@@ -41,11 +41,11 @@ const lessonsData = {
     name: "Science (IPA)",
     level: "Advanced",
     description: "Pelajari rahasia alam semesta melalui Fisika Quantum tingkat lanjut, Termodinamika, serta struktur biologi mikro pada sel hidup.",
-    color: "from-teal-400 to-emerald-500",
     lessonsCount: 22,
     quizzesCount: 10,
     hoursCount: 18,
     iconType: "science",
+    videoUrl: "https://www.youtube.com/watch?v=URUJD5NEXC8",
     syllabus: [
       { title: "Dasar Fisika Quantum", duration: "60 Menit" },
       { title: "Dualisme Gelombang Partikel", duration: "75 Menit" },
@@ -59,11 +59,11 @@ const lessonsData = {
     name: "Coding & Algoritma",
     level: "Beginner to Pro",
     description: "Bangun aplikasi modern menggunakan Next.js dan Python. Pelajari Struktur Data dasar, Algoritma Rekursif, dan optimasi performa backend.",
-    color: "from-purple-400 to-pink-500",
     lessonsCount: 28,
     quizzesCount: 14,
     hoursCount: 24,
     iconType: "coding",
+    videoUrl: "https://www.youtube.com/watch?v=SqcY0GlETPk",
     syllabus: [
       { title: "Pengenalan Struktur Data & Array", duration: "30 Menit" },
       { title: "Algoritma Rekursi & Dynamic Programming", duration: "90 Menit" },
@@ -77,11 +77,11 @@ const lessonsData = {
     name: "Bahasa Inggris",
     level: "Beginner",
     description: "Tingkatkan keterampilan komunikasi Anda melalui penulisan akademis (Academic Writing), tata bahasa (Grammar), serta praktik berbicara (Speaking).",
-    color: "from-blue-400 to-indigo-500",
     lessonsCount: 12,
     quizzesCount: 6,
     hoursCount: 8,
     iconType: "english",
+    videoUrl: "https://www.youtube.com/watch?v=juKGHh3_DNY",
     syllabus: [
       { title: "Penyusunan Kalimat Akademik", duration: "45 Menit" },
       { title: "Penguasaan 16 Tenses Utama", duration: "90 Menit" },
@@ -96,15 +96,53 @@ export default function LessonPage() {
   const router = useRouter();
   const { markAsCompleted } = useStreak();
   const id = params?.id;
-  const lesson = lessonsData[id] || lessonsData.coding; // default to coding if invalid id
+
+  const [lesson, setLesson] = useState(() => {
+    const staticLesson = lessonsData[id] || lessonsData.coding;
+    return {
+      ...staticLesson,
+      videoUrl: staticLesson.videoUrl || ""
+    };
+  });
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [showAllSyllabus, setShowAllSyllabus] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Simple count-up micro-interactions
   const [animatedLessons, setAnimatedLessons] = useState(0);
   const [animatedQuizzes, setAnimatedQuizzes] = useState(0);
   const [animatedHours, setAnimatedHours] = useState(0);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      fetch("/api/subjects")
+        .then((res) => res.json())
+        .then((subjects) => {
+          if (subjects && !subjects.error) {
+            const found = subjects.find((s) => String(s.id) === String(id));
+            if (found) {
+              setLesson({
+                id: found.id,
+                name: found.title,
+                level: found.level || "Beginner",
+                description: found.description,
+                lessonsCount: found.syllabus ? found.syllabus.length : 12,
+                quizzesCount: found.quizzesCount || 6,
+                hoursCount: found.hoursCount || 8,
+                iconType: found.id,
+                syllabus: found.syllabus || [
+                  { title: "Pengenalan Materi", duration: "10 Menit" }
+                ],
+                videoUrl: found.videoUrl || ""
+              });
+            }
+          }
+        })
+        .catch((err) => console.error("Error loading dynamic subject details from database:", err));
+    }
+  }, [id]);
 
   useEffect(() => {
     let startTimestamp = null;
@@ -130,6 +168,10 @@ export default function LessonPage() {
     window.requestAnimationFrame(step);
   }, [lesson]);
 
+  if (!mounted) {
+    return null;
+  }
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -144,102 +186,102 @@ export default function LessonPage() {
   };
 
   return (
-    <main className="min-h-screen pb-32 bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white font-sans relative overflow-hidden flex flex-col items-center">
-      {/* Decorative Blur Orbs */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-500/20 blur-[130px] pointer-events-none" />
-      <div className="absolute top-[30%] right-[10%] w-[300px] h-[300px] rounded-full bg-pink-500/10 blur-[100px] pointer-events-none" />
-
+    <main className="min-h-screen pb-32 app-theme-bg font-sans relative overflow-hidden flex flex-col items-center">
       <div className="max-w-md w-full px-6 pt-6 flex flex-col gap-6 relative z-10">
         
         {/* Header Bar */}
         <div className="flex items-center justify-between w-full">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95"
+            className="w-10 h-10 app-theme-card rounded-xl flex items-center justify-center text-[var(--text-color)] transition-all cursor-pointer shadow-md active:scale-95"
             aria-label="Back"
           >
-            <ChevronLeft className="w-5 h-5 text-white/90" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
           
-          <span className="text-sm font-bold tracking-wider text-white/90">Detail Pelajaran</span>
+          <span className="text-sm font-bold tracking-wider app-theme-text">Detail Pelajaran</span>
           
           <button
             onClick={handleShare}
-            className="w-10 h-10 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95"
+            className="w-10 h-10 app-theme-card rounded-xl flex items-center justify-center text-[var(--text-color)] transition-all cursor-pointer shadow-md active:scale-95"
             aria-label="Share"
           >
-            <Share2 className="w-5 h-5 text-white/90" />
+            <Share2 className="w-5 h-5" />
           </button>
         </div>
 
         {/* Hero Section */}
         <div className="flex flex-col items-center text-center mt-4">
-          <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${lesson.color} flex items-center justify-center shadow-xl border border-white/20 mb-5 transform hover:rotate-6 transition-all duration-300`}>
-            {lesson.iconType === "mtk" && <GraduationCap className="w-10 h-10 text-white" />}
-            {lesson.iconType === "science" && <FlaskConical className="w-10 h-10 text-white" />}
-            {lesson.iconType === "coding" && <Code className="w-10 h-10 text-white" />}
-            {lesson.iconType === "english" && <Globe className="w-10 h-10 text-white" />}
+          <div className="w-20 h-20 rounded-3xl bg-black/10 dark:bg-white/10 flex items-center justify-center border border-black/10 dark:border-white/20 mb-5 transform hover:rotate-6 transition-all duration-300">
+            {lesson.iconType === "mtk" && <GraduationCap className="w-10 h-10 text-black dark:text-white" />}
+            {lesson.iconType === "science" && <FlaskConical className="w-10 h-10 text-black dark:text-white" />}
+            {lesson.iconType === "coding" && <Code className="w-10 h-10 text-black dark:text-white" />}
+            {lesson.iconType === "english" && <Globe className="w-10 h-10 text-black dark:text-white" />}
           </div>
           
-          <span className="px-3 py-1 bg-white/10 border border-white/15 text-[10px] font-extrabold uppercase tracking-widest rounded-full text-purple-300">
+          <span className="px-3 py-1 bg-black/10 dark:bg-white/10 border border-[var(--border-color)] text-[10px] font-extrabold uppercase tracking-widest rounded-full app-theme-text-muted">
             {lesson.level}
           </span>
           
-          <h1 className="text-3xl font-extrabold text-white mt-3 tracking-tight leading-tight">
+          <h1 className="text-3xl font-extrabold app-theme-text mt-3 tracking-tight leading-tight">
             {lesson.name}
           </h1>
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl py-3 px-4 shadow-lg text-center mt-2">
+        <div className="grid grid-cols-3 gap-3 app-theme-card rounded-2xl py-3 px-4 shadow-lg text-center mt-2">
           <div>
-            <span className="text-[10px] text-white/50 block font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
+            <span className="text-[10px] app-theme-text-muted block font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
               <BookOpen className="w-3 h-3" /> Lessons
             </span>
-            <span className="text-lg font-bold text-white mt-0.5 block">{animatedLessons}</span>
+            <span className="text-lg font-bold app-theme-text mt-0.5 block">{animatedLessons}</span>
           </div>
-          <div className="border-l border-white/10">
-            <span className="text-[10px] text-white/50 block font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
+          <div className="border-l border-[var(--border-color)]">
+            <span className="text-[10px] app-theme-text-muted block font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
               <HelpCircle className="w-3 h-3" /> Quizzes
             </span>
-            <span className="text-lg font-bold text-purple-300 mt-0.5 block">{animatedQuizzes}</span>
+            <span className="text-lg font-bold app-theme-text mt-0.5 block">{animatedQuizzes}</span>
           </div>
-          <div className="border-l border-white/10">
-            <span className="text-[10px] text-white/50 block font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
+          <div className="border-l border-[var(--border-color)]">
+            <span className="text-[10px] app-theme-text-muted block font-semibold uppercase tracking-wider flex items-center justify-center gap-1">
               <Clock className="w-3 h-3" /> Hours
             </span>
-            <span className="text-lg font-bold text-amber-400 mt-0.5 block">{animatedHours}h</span>
+            <span className="text-lg font-bold app-theme-text mt-0.5 block">{animatedHours}h</span>
           </div>
         </div>
 
         {/* Deskripsi */}
         <div className="flex flex-col gap-2 mt-2">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-purple-300">TENTANG KELAS</h3>
-          <p className="text-xs text-white/70 leading-relaxed">
+          <h3 className="text-sm font-bold uppercase tracking-wider app-theme-text-muted">TENTANG KELAS</h3>
+          <p className="text-xs app-theme-text leading-relaxed">
             {lesson.description}
           </p>
         </div>
 
         {/* List Lessons / Syllabus */}
         <div className="flex flex-col gap-3 mt-2">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-purple-300">DAFTAR MATERI</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wider app-theme-text-muted">DAFTAR MATERI</h3>
           
           <div className="grid grid-cols-2 gap-4 w-full">
             {(showAllSyllabus ? lesson.syllabus : lesson.syllabus.slice(0, 4)).map((item, idx) => (
-              <LessonItem 
+              <div 
                 key={idx}
-                title={item.title}
-                index={idx + 1}
-                duration={item.duration}
-              />
+                onClick={() => router.push(`/lesson/${id}/${idx}`)}
+                className="cursor-pointer transition-transform active:scale-[0.97]"
+              >
+                <LessonItem 
+                  title={item.title}
+                  index={idx + 1}
+                  duration={item.duration}
+                />
+              </div>
             ))}
           </div>
 
           {lesson.syllabus.length > 4 && (
             <button
               onClick={() => setShowAllSyllabus(!showAllSyllabus)}
-              className="mt-2 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 backdrop-blur-xl"
+              className="mt-2 w-full py-3 app-theme-card hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl text-xs font-bold text-[var(--text-color)] transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
             >
               {showAllSyllabus ? "Lihat Lebih Sedikit" : "Lihat Selengkapnya"}
             </button>
@@ -257,12 +299,12 @@ export default function LessonPage() {
           }}
           className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-300 ease-in-out cursor-pointer shadow-md active:scale-95 flex-shrink-0 ${
             isFavorited 
-              ? "bg-amber-500/20 border-amber-500/40 text-amber-400" 
-              : "bg-white/5 border-white/10 text-white/75 hover:bg-white/10 hover:border-white/15"
+              ? "bg-black/20 dark:bg-white/20 border-[var(--border-color)] text-[var(--text-color)]" 
+              : "app-theme-card text-[var(--text-color)]/75 hover:bg-black/5 dark:hover:bg-white/5"
           }`}
           aria-label="Add to Favorites"
         >
-          <Bookmark className={`w-5 h-5 ${isFavorited ? "fill-amber-400" : ""}`} />
+          <Bookmark className={`w-5 h-5 ${isFavorited ? "fill-[var(--text-color)]" : ""}`} />
         </button>
 
         <button
@@ -270,7 +312,7 @@ export default function LessonPage() {
             markAsCompleted();
             router.push("/");
           }}
-          className={`flex-grow bg-gradient-to-r ${lesson.color} py-4 rounded-2xl text-center font-bold text-sm text-white shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 ease-in-out cursor-pointer border border-white/10`}
+          className="flex-grow bg-[var(--text-color)] hover:bg-[var(--text-color)]/90 py-4 rounded-2xl text-center font-bold text-sm text-[var(--bg-color)] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 ease-in-out cursor-pointer border border-[var(--border-color)]"
         >
           START LESSONS
         </button>

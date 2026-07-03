@@ -1,25 +1,41 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { ChevronLeft, Bell, Moon, Globe, LogOut, Database } from "lucide-react";
+import { ChevronLeft, Bell, Moon, Globe, LogOut, Database, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../../lib/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import "../../../lib/i18n";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { isDarkMode, toggleTheme } = useTheme();
   
   // Toggles
   const [notificationsPaused, setNotificationsPaused] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
 
   // Language modal state
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsAdmin(localStorage.getItem("userRole") === "admin");
+    }
+  }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userPicture");
+      document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
     alert(i18n.language === "en" ? "Successfully logged out!" : "Berhasil keluar akun!");
     router.push("/");
   };
@@ -29,7 +45,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen pb-24 bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white font-sans relative overflow-hidden flex flex-col items-center">
+    <main className="min-h-screen pb-24 app-theme-bg font-sans relative overflow-hidden flex flex-col items-center">
       {/* Decorative Blur Orbs */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-500/20 blur-[130px] pointer-events-none" />
@@ -55,7 +71,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-3 mt-4">
           
           {/* Pause Notifications Toggle */}
-          <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 shadow-sm">
+          <div className="w-full flex items-center justify-between p-4 rounded-2xl app-theme-card shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-300">
                 <Bell className="w-4.5 h-4.5" />
@@ -82,7 +98,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Dark Mode Toggle */}
-          <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 shadow-sm">
+          <div className="w-full flex items-center justify-between p-4 rounded-2xl app-theme-card shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-300">
                 <Moon className="w-4.5 h-4.5" />
@@ -97,13 +113,13 @@ export default function SettingsPage() {
             
             {/* Toggle Switch */}
             <button 
-              onClick={() => setDarkMode(!darkMode)}
+              onClick={toggleTheme}
               className={`w-10 h-6 rounded-full p-0.5 transition-all duration-300 ${
-                darkMode ? "bg-purple-500" : "bg-white/10"
+                isDarkMode ? "bg-purple-500" : "bg-white/10"
               }`}
             >
               <div className={`w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${
-                darkMode ? "translate-x-4" : "translate-x-0"
+                isDarkMode ? "translate-x-4" : "translate-x-0"
               }`} />
             </button>
           </div>
@@ -111,7 +127,7 @@ export default function SettingsPage() {
           {/* Language Selection */}
           <div 
             onClick={() => setIsLanguageModalOpen(true)}
-            className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer shadow-sm"
+            className="w-full flex items-center justify-between p-4 rounded-2xl app-theme-card hover:bg-white/5 transition-all cursor-pointer shadow-sm"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-300">
@@ -178,7 +194,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => {
                     i18n.changeLanguage("id");
-                    localStorage.setItem("stry_language", "id");
+                    localStorage.setItem("studee_language", "id");
                     setIsLanguageModalOpen(false);
                   }}
                   className={`w-full p-3.5 rounded-xl border text-xs font-bold transition-all text-left flex justify-between items-center ${
@@ -195,7 +211,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => {
                     i18n.changeLanguage("en");
-                    localStorage.setItem("stry_language", "en");
+                    localStorage.setItem("studee_language", "en");
                     setIsLanguageModalOpen(false);
                   }}
                   className={`w-full p-3.5 rounded-xl border text-xs font-bold transition-all text-left flex justify-between items-center ${

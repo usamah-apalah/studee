@@ -1,63 +1,82 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleStart = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hasVisitedOnboarding", "true");
+      localStorage.setItem("isLoggedIn", "true");
+      document.cookie = "isLoggedIn=true; path=/";
+      localStorage.setItem("userRole", "user");
+      document.cookie = "userRole=user; path=/";
+    }
+    setIsExiting(true);
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 600); // 600ms match duration of ease-out transition
+  };
 
   return (
-    <main className="relative w-full min-h-screen overflow-hidden flex flex-col justify-between p-8 text-white font-sans">
-      {/* Background Image with Dark Overlay */}
+    <motion.main
+      initial={{ opacity: 0, scale: 1.02 }}
+      animate={isExiting ? { opacity: 0, scale: 0.98, filter: "blur(15px)" } : { opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="relative w-full min-h-screen overflow-hidden text-white font-sans flex flex-col justify-between p-6 sm:p-10 md:p-16"
+    >
+      {/* Background Image with Blur & Dark Gradient Overlay */}
       <div 
-        className="absolute inset-0 bg-cover bg-center z-0 scale-105 transition-transform duration-10000 ease-out"
+        className="absolute inset-0 bg-cover bg-center z-0 scale-105 filter blur-xs"
         style={{ backgroundImage: `url('/onboarding_bg.png')` }}
       />
-      <div className="absolute inset-0 bg-black/65 z-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/75 to-black/90 z-10" />
 
-      {/* Glow effects */}
-      <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] rounded-full bg-purple-500/10 blur-[130px] pointer-events-none z-15" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[450px] h-[450px] rounded-full bg-pink-500/10 blur-[120px] pointer-events-none z-15" />
+      {/* Glow ambient effects */}
+      <div className="absolute top-[-10%] left-[-10%] w-[350px] h-[350px] rounded-full bg-purple-500/10 blur-[120px] pointer-events-none z-15" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[350px] h-[350px] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none z-15" />
 
-      {/* 1. Branding Header */}
-      <div className="w-full flex justify-center mt-6 relative z-20">
-        <h1 className="text-4xl font-extrabold tracking-widest text-white select-none">
-          <span className="text-purple-400 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">S</span>try
+      {/* Top: Branding Logo (Typography Design) - Center Aligned */}
+      <div className="relative z-20 flex flex-col items-center select-none pt-4 w-full">
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-outfit">
+          Stu<span className="text-purple-400">dee</span>
         </h1>
       </div>
 
-      {/* Content wrapper grouped at the bottom for thumb-friendly reach */}
-      <div className="w-full max-w-md mx-auto flex flex-col gap-8 relative z-20 mt-auto">
-        
-        {/* 2. Headline Utama */}
-        <div className="flex flex-col gap-3.5 pr-4">
-          <h2 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight text-white drop-shadow-md">
-            Enhance Your Online <span className="text-purple-300 bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300">Learning</span> Experience
-          </h2>
-          <p className="text-sm text-white/70 leading-relaxed max-w-xs">
-            Temukan cara paling konsisten dan menyenangkan untuk menguasai keterampilan baru setiap hari.
-          </p>
-        </div>
+      {/* Bottom Section: Floating Glassmorphic Panel (Tagline + Indicators & CTA Button) */}
+      <div className="w-full relative z-20 flex flex-col gap-6 mt-auto pb-4 max-w-xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 sm:p-8 shadow-2xl">
+        {/* Tagline - Tighter letter spacing (tracking-tight) & line spacing (leading-tight) */}
+        <h2 className="text-2.5xl sm:text-3xl md:text-3.5xl font-semibold leading-tight text-white font-sans text-left lowercase tracking-tight">
+          temukan ritme belajar yang menyenangkan dan jadikan setiap prosesnya terasa <span className="text-purple-400 font-bold">lebih ringan</span>.
+        </h2>
 
-        {/* 3. Bottom Controls (Modern UI) */}
-        <div className="w-full bg-white/10 backdrop-blur-md border border-white/10 rounded-full p-2 pl-6 flex items-center justify-between shadow-2xl mb-4">
-          {/* Dots Indicator */}
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-2 rounded-full bg-purple-400 transition-all duration-300" />
-            <span className="w-2 h-2 rounded-full bg-white/20 hover:bg-white/40 transition-colors cursor-pointer" />
-            <span className="w-2 h-2 rounded-full bg-white/20 hover:bg-white/40 transition-colors cursor-pointer" />
+        {/* Bottom Row: 3 Dashes Indicators (Left) & Pill Button (Right) */}
+        <div className="w-full flex items-center justify-between gap-4 mt-2">
+          {/* Dashes Indicator (Purple) */}
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-1 rounded-full bg-purple-500" />
+            <div className="w-6 h-1 rounded-full bg-purple-500/25" />
+            <div className="w-6 h-1 rounded-full bg-purple-500/25" />
           </div>
 
-          {/* Get Start Button */}
+          {/* Purple Pill Button with Dark Circle Arrow */}
           <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full py-3 px-6 text-sm font-bold text-white shadow-lg transition-all duration-300 ease-in-out active:scale-95 cursor-pointer border border-white/10"
+            onClick={handleStart}
+            className="flex items-center gap-3 bg-purple-500 text-white rounded-full py-2 pl-2 pr-6 text-xs sm:text-sm font-bold shadow-lg transition-all duration-300 active:scale-95 cursor-pointer hover:bg-purple-600 hover:shadow-purple-500/25 flex-shrink-0"
           >
-            Get Started
-            <ArrowRight className="w-4 h-4 text-white" />
+            {/* Dark Circle with Right Arrow */}
+            <div className="w-8 h-8 rounded-full bg-black/80 flex items-center justify-center">
+              <ChevronRight className="w-4 h-4 text-purple-400" />
+            </div>
+            <span>Get Started</span>
           </button>
         </div>
       </div>
-    </main>
+    </motion.main>
   );
 }
