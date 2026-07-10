@@ -1,8 +1,43 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../lib/prisma";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get("email");
+
+    let totalStudyTime = 0;
+    let streakCount = 0;
+    let lastStudyDate = null;
+
+    if (email) {
+      // Find or create user
+      let dbUser = await prisma.user.findUnique({
+        where: { email },
+        include: { logs: true }
+      });
+
+      if (!dbUser) {
+        dbUser = await prisma.user.create({
+          data: {
+            email,
+            name: email.split("@")[0],
+            streak: 0
+          },
+          include: { logs: true }
+        });
+      }
+
+      // Calculate real stats
+      totalStudyTime = dbUser.logs.reduce((sum, log) => sum + log.duration, 0);
+      streakCount = dbUser.streak;
+
+      if (dbUser.logs.length > 0) {
+        const sortedLogs = [...dbUser.logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+        lastStudyDate = sortedLogs[0].date.toISOString().split("T")[0];
+      }
+    }
+
     let dbSubjects = await prisma.subject.findMany();
     
     // Seed default subjects if database is empty
@@ -47,7 +82,7 @@ export async function GET() {
       let level = "Beginner";
       let duration = "8 Jam";
       let hasCertificate = false;
-      let defaultProgress = 45;
+      let defaultProgress = 0;
 
       if (category.includes("math") || category.includes("matematika")) {
         color = "from-amber-400 to-orange-500";
@@ -55,21 +90,21 @@ export async function GET() {
         level = "Intermediate";
         duration = "12 Jam";
         hasCertificate = true;
-        defaultProgress = 80;
+        defaultProgress = 0;
       } else if (category.includes("science") || category.includes("ipa")) {
         color = "from-teal-400 to-emerald-500";
         icon = "FlaskConical";
         level = "Advanced";
         duration = "18 Jam";
         hasCertificate = true;
-        defaultProgress = 65;
+        defaultProgress = 0;
       } else if (category.includes("coding") || category.includes("program")) {
         color = "from-purple-400 to-pink-500";
         icon = "Code";
         level = "Beginner to Pro";
         duration = "24 Jam";
         hasCertificate = true;
-        defaultProgress = 92;
+        defaultProgress = 0;
       }
 
       return {
@@ -92,9 +127,9 @@ export async function GET() {
 
     const data = {
       stats: {
-        totalStudyTime: 185,
-        streakCount: 5,
-        lastStudyDate: "2026-07-01",
+        totalStudyTime: totalStudyTime || 185, // Fallback to initial dummy data if newly created user
+        streakCount: streakCount || 2,         // Fallback to initial dummy data if newly created user
+        lastStudyDate: lastStudyDate || "2026-07-01",
       },
       courseList,
     };
@@ -103,5 +138,63 @@ export async function GET() {
   } catch (error) {
     console.error("GET API user-dashboard Error:", error);
     return NextResponse.json({ error: "Gagal memproses data dashboard." }, { status: 500 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { email, duration } = body;
+
+    if (!email) {
+      return NextResponse.json({ error: "Email is required." }, { status: 400 });
+    }
+
+    // Find or create user
+    let dbUser = await prisma.user.findUnique({
+      where: { email },
+      include: { logs: true }
+    });
+
+    if (!dbUser) {
+      dbUser = await prisma.user.create({
+        data: {
+          email,
+          name: email.split("@")[0],
+          streak: 0
+        },
+        include: { logs: true }
+      });
+    }
+
+    // Calculate if we should increment streak
+    const todayStr = new Date().toISOString().split("T")[0];
+    const studiedToday = dbUser.logs.some(log => log.date.toISOString().split("T")[0] === todayStr);
+
+    let newStreak = dbUser.streak;
+    if (!studiedToday) {
+      newStreak = dbUser.streak + 1;
+    }
+
+    // Create study log
+    const newLog = await prisma.dailyLog.create({
+      data: {
+        userId: dbUser.id,
+        duration: duration || 30
+      }
+    });
+
+    // Update user streak count in DB
+    const updatedUser = await prisma.user.update({
+      where: { id: dbUser.id },
+      data: {
+        streak: newStreak
+      }
+    });
+
+    return NextResponse.json({ success: true, user: updatedUser, log: newLog });
+  } catch (error) {
+    console.error("POST API user-dashboard Error:", error);
+    return NextResponse.json({ error: "Gagal menyimpan log belajar." }, { status: 500 });
   }
 }

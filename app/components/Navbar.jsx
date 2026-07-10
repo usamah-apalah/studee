@@ -21,7 +21,8 @@ export default function Navbar() {
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
-  }, [pathname]); // Refresh login status on navigation
+    setIsAdminModalOpen(false); // Close admin modal automatically on navigation
+  }, [pathname]); // Refresh login status and close modal on navigation
 
   useEffect(() => {
     if (!isAdminModalOpen) {
@@ -40,8 +41,6 @@ export default function Navbar() {
     activeTab = "stats";
   } else if (pathname.startsWith("/profile")) {
     activeTab = "profile";
-  } else if (pathname.startsWith("/admin")) {
-    activeTab = "admin";
   }
 
   const tabs = [
@@ -81,11 +80,6 @@ export default function Navbar() {
         </svg>
       ),
     },
-    {
-      id: "admin",
-      label: "Admin",
-      icon: <ShieldCheck className="w-6 h-6" />,
-    },
   ];
 
   if (!mounted) {
@@ -97,6 +91,7 @@ export default function Navbar() {
     pathname === "/onboarding" ||
     pathname === "/login" ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/stats") ||
     /^\/lesson\/[^/]+\/[^/]+$/.test(pathname)
   ) {
     return null;
@@ -109,24 +104,6 @@ export default function Navbar() {
           <button
             key={tab.id}
             onClick={() => {
-              if (tab.id === "admin") {
-                const hasAdminCookie = typeof document !== "undefined" && 
-                  document.cookie.split("; ").some(row => row.trim().startsWith("userRole=admin"));
-                const hasAdminStorage = typeof window !== "undefined" && 
-                  localStorage.getItem("userRole") === "admin";
-                
-                const isAdminUser = hasAdminCookie && hasAdminStorage;
-                
-                if (isAdminUser) {
-                  router.push("/admin");
-                } else {
-                  if (typeof window !== "undefined") {
-                    localStorage.removeItem("userRole");
-                  }
-                  setIsAdminModalOpen(true);
-                }
-                return;
-              }
               if (tab.id === "profile") {
                 router.push("/profile");
                 return;
@@ -159,95 +136,6 @@ export default function Navbar() {
           </button>
         ))}
       </nav>
-
-      {/* Admin Authentication Modal */}
-      <AnimatePresence>
-        {isAdminModalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAdminModalOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xl z-50 cursor-pointer"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-x-6 top-1/2 -translate-y-1/2 mx-auto max-w-sm w-[90%] app-theme-card rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-4 overflow-hidden"
-            >
-              <div className="flex justify-between items-center w-full z-10">
-                <div className="flex flex-col">
-                  <h3 className="text-sm font-bold app-theme-text uppercase tracking-wider flex items-center gap-2">
-                    <ShieldCheck className="w-4.5 h-4.5 text-[var(--text-color)]" /> Admin Auth
-                  </h3>
-                  <span className="text-[10px] app-theme-text-muted font-semibold mt-1">
-                    Login sebagai Admin untuk mengelola konten
-                  </span>
-                </div>
-                <button
-                  onClick={() => setIsAdminModalOpen(false)}
-                  className="w-7 h-7 rounded-lg app-theme-card flex items-center justify-center text-[var(--text-color)]/55 hover:text-[var(--text-color)] transition-colors cursor-pointer"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-3 mt-2 z-10">
-                <input
-                  type="text"
-                  placeholder="Email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  autoComplete="off"
-                  className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl py-3.5 px-4 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/30 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:border-[var(--text-color)]/50 transition-all shadow-inner"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  autoComplete="new-password"
-                  className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl py-3.5 px-4 text-xs text-[var(--text-color)] placeholder-[var(--text-color)]/30 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:border-[var(--text-color)]/50 transition-all shadow-inner"
-                />
-                <button
-                  onClick={() => {
-                    if (
-                      adminEmail.toLowerCase() === "admin@example.com" &&
-                      adminPassword === "admin123"
-                    ) {
-                      localStorage.setItem("userRole", "admin");
-                      document.cookie = "userRole=admin; path=/";
-                      localStorage.setItem("isLoggedIn", "true");
-                      setIsAdminModalOpen(false);
-                      router.push("/admin");
-                    } else {
-                      alert("Invalid credentials.");
-                    }
-                  }}
-                  className="mt-2 w-full bg-[var(--text-color)] hover:bg-[var(--text-color)]/95 text-[var(--bg-color)] rounded-2xl py-3.5 text-xs font-bold shadow-lg border border-[var(--border-color)] transition-all active:scale-95 cursor-pointer"
-                >
-                  Login Admin
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </>
   );
 }

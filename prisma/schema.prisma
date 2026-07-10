@@ -33,3 +33,8 @@ model Subject {
   questions   Json?    // Menyimpan daftar soal kuis hasil generate AI
   syllabus    Json?    // Menyimpan daftar sub-materi (silabus)
 }
+
+model AdminEmail {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  email String @unique
+}

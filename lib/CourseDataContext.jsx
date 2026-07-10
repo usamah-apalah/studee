@@ -16,7 +16,16 @@ export function CourseDataProvider({ children }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/user-dashboard");
+      
+      let emailParam = "";
+      if (typeof window !== "undefined") {
+        const savedEmail = localStorage.getItem("userEmail");
+        if (savedEmail) {
+          emailParam = `?email=${encodeURIComponent(savedEmail)}`;
+        }
+      }
+
+      const res = await fetch(`/api/user-dashboard${emailParam}`);
       const data = await res.json();
       if (data && !data.error) {
         // Merge with localStorage overrides if present

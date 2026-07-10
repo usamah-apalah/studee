@@ -62,7 +62,8 @@ export default function Home() {
     localStorage.setItem("isLoggedIn", "true");
     document.cookie = "isLoggedIn=true; path=/";
     
-    if (modalEmail.toLowerCase() === "admin@example.com") {
+    const emailLower = modalEmail.toLowerCase();
+    if (emailLower === "admin@example.com" || emailLower === "admin@stry.com") {
       localStorage.setItem("userRole", "admin");
       document.cookie = "userRole=admin; path=/";
     } else {
@@ -70,6 +71,8 @@ export default function Home() {
       document.cookie = "userRole=user; path=/";
     }
     
+    localStorage.setItem("userEmail", modalEmail);
+    localStorage.setItem("userName", modalEmail.split("@")[0]);
     setIsLoginModalOpen(false);
   };
 
@@ -322,7 +325,7 @@ export default function Home() {
                   onClick={() => setIsChartDropdownOpen(false)}
                 />
                 {/* Dropdown Menu (Glassmorphism) */}
-                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/20 rounded-2xl py-1.5 shadow-2xl z-20 overflow-hidden text-xs">
+                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-neutral-950 border border-slate-200 dark:border-white/20 rounded-2xl py-1.5 shadow-2xl z-20 overflow-hidden text-xs">
                   {[
                     { id: "all", label: "Semua Mapel" },
                     { id: "mtk", label: "Matematika" },
@@ -616,8 +619,48 @@ export default function Home() {
   const renderWeeklyStreakCalendar = () => {
     const completionPercent = Math.round((activeDaysCount / 7) * 100);
 
+    const getFlameStyle = (streak) => {
+      let scale = 1.0;
+      let glowClass = "";
+      let fillClass = "text-slate-300 dark:text-white/20 fill-none";
+
+      const isMilestone = streak === 1 || streak === 5 || streak === 10 || streak === 20 || streak >= 30;
+      const isActive = streak >= 1;
+
+      if (isActive) {
+        fillClass = "text-slate-800 dark:text-white fill-slate-800 dark:fill-white";
+        
+        if (streak === 1) {
+          scale = 0.9;
+        } else if (streak === 2) {
+          scale = 1.25;
+        } else if (streak === 3) {
+          scale = 1.5;
+        } else if (streak === 4) {
+          scale = 1.7;
+        } else if (streak >= 5 && streak < 10) {
+          scale = 2.0;
+        } else if (streak >= 10 && streak < 20) {
+          scale = 2.4;
+        } else {
+          scale = 2.8;
+        }
+
+        if (isMilestone) {
+          glowClass = "drop-shadow-[0_0_8px_rgba(255,255,255,0.75)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.9)] animate-pulse";
+        }
+      }
+
+      return { scale, glowClass, fillClass };
+    };
+
+    const { scale, glowClass, fillClass } = getFlameStyle(totalStreak);
+
     return (
-      <div className="app-theme-card rounded-[2rem] p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6 w-full">
+      <div 
+        onClick={() => router.push("/stats")}
+        className="app-theme-card rounded-[2rem] p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6 w-full cursor-pointer hover:scale-[1.005] hover:shadow-3xl transition-all"
+      >
         {/* Glow */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 opacity-10 blur-3xl pointer-events-none" />
 
@@ -653,7 +696,10 @@ export default function Home() {
           {/* Settings Menu Button */}
           <button
             className="text-slate-400 dark:text-white/40 hover:text-slate-650 dark:hover:text-white/70 transition-colors p-1"
-            onClick={() => alert("Pengaturan Streak")}
+            onClick={(e) => {
+              e.stopPropagation();
+              alert("Pengaturan Streak");
+            }}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 10a2 2 0 11-2 2 2 2 0 012-2zm6 0a2 2 0 11-2 2 2 2 0 012-2zM6 10a2 2 0 11-2 2 2 2 0 012-2z" />
@@ -672,73 +718,114 @@ export default function Home() {
 
         {/* Days Row */}
         <div className="flex justify-between items-center w-full gap-1 mt-1">
-          {streakData.map((day, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-3 flex-1">
-              {/* Day Name */}
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all ${
-                  day.isToday
-                    ? "bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-slate-800 dark:text-white"
-                    : "text-slate-450 dark:text-white/40"
-                }`}
-              >
-                {day.name}
-              </span>
+          {streakData.map((day, idx) => {
+            const milestoneTargets = [1, 5, 10, 20, 30, 40, 50];
+            const dayNum = milestoneTargets[idx];
+            const isActive = totalStreak >= dayNum;
+            
+            let dayScale = 1.0;
+            let dayGlow = "";
+            
+            if (isActive) {
+              if (dayNum === 1) {
+                dayScale = 0.85;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+              else if (dayNum === 5) {
+                dayScale = 1.15;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+              else if (dayNum === 10) {
+                dayScale = 1.4;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+              else if (dayNum === 20) {
+                dayScale = 1.65;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+              else if (dayNum === 30) {
+                dayScale = 1.9;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+              else if (dayNum === 40) {
+                dayScale = 2.15;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+              else if (dayNum === 50) {
+                dayScale = 2.4;
+                dayGlow = "drop-shadow-[0_0_8px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_0_8px_rgba(255,255,255,0.85)] animate-pulse";
+              }
+            }
 
-              {/* Circle Wrapper */}
-              <div className="relative">
-                {/* Circular Progress Ring for Today (Tue) */}
-                {day.isToday && (
-                  <svg className="absolute inset-0 w-9 h-9 -rotate-90 pointer-events-none z-10">
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      className="stroke-black/5 dark:stroke-white/10 fill-none"
-                      strokeWidth="1.5"
-                    />
-                    <motion.circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      className="stroke-slate-700 dark:stroke-white fill-none"
-                      strokeWidth="2.5"
-                      strokeDasharray="100"
-                      initial={{ strokeDashoffset: 100 }}
-                      animate={{ strokeDashoffset: day.active ? 0 : 50 }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                    />
-                  </svg>
-                )}
-
-                {/* Day Circle Container */}
-                <motion.div
-                  initial={day.active ? { scale: 0.9, opacity: 0.8 } : false}
-                  animate={
-                    day.active
-                      ? { scale: 1, opacity: 1 }
-                      : { scale: 1, opacity: 0.6 }
-                  }
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                    day.active
-                      ? "bg-black/10 dark:bg-white/10 border border-black/15 dark:border-white/15 text-slate-850 dark:text-white shadow-inner"
-                      : "bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-slate-300 dark:text-white/10"
+            return (
+              <div key={idx} className="flex flex-col items-center gap-3 flex-1">
+                {/* Day Name */}
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                    day.isToday
+                      ? "bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-slate-800 dark:text-white"
+                      : "text-slate-450 dark:text-white/40"
                   }`}
                 >
-                  <Flame
-                    className={`w-4 h-4 ${day.active ? "text-slate-800 dark:text-white fill-slate-800 dark:fill-white" : "text-slate-350 dark:text-white/20"}`}
-                  />
-                </motion.div>
-              </div>
+                  {day.name}
+                </span>
 
-              {/* Progress Text */}
-              <span
-                className={`text-[10px] font-semibold ${day.isToday ? "text-slate-800 dark:text-white" : "text-slate-450 dark:text-white/40"}`}
-              >
-                {day.active ? day.min.replace("m", "") : "-"}
-              </span>
-            </div>
-          ))}
+                {/* Circle Wrapper */}
+                <div className="relative">
+                  {/* Circular Progress Ring for Today (Tue) */}
+                  {day.isToday && (
+                    <svg className="absolute inset-0 w-9 h-9 -rotate-90 pointer-events-none z-10">
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="16"
+                        className="stroke-black/5 dark:stroke-white/10 fill-none"
+                        strokeWidth="1.5"
+                      />
+                      <motion.circle
+                        cx="18"
+                        cy="18"
+                        r="16"
+                        className="stroke-slate-700 dark:stroke-white fill-none"
+                        strokeWidth="2.5"
+                        strokeDasharray="100"
+                        initial={{ strokeDashoffset: 100 }}
+                        animate={{ strokeDashoffset: isActive ? 0 : 50 }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                      />
+                    </svg>
+                  )}
+
+                  {/* Day Circle Container */}
+                  <motion.div
+                    initial={isActive ? { scale: 0.9, opacity: 0.8 } : false}
+                    animate={
+                      isActive
+                        ? { scale: 1, opacity: 1 }
+                        : { scale: 1, opacity: 0.6 }
+                    }
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                      isActive
+                        ? "bg-black/10 dark:bg-white/10 border border-black/15 dark:border-white/15 text-slate-850 dark:text-white shadow-inner"
+                        : "bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-slate-300 dark:text-white/10"
+                    }`}
+                  >
+                    <Flame
+                      className={`w-4 h-4 transition-all duration-300 ${isActive ? "text-slate-800 dark:text-white fill-slate-800 dark:fill-white" : "text-slate-350 dark:text-white/20"} ${dayGlow}`}
+                      style={isActive ? { transform: `scale(${dayScale})` } : undefined}
+                    />
+                  </motion.div>
+                </div>
+
+                {/* Progress Text */}
+                <span
+                  className={`text-[10px] font-semibold ${day.isToday ? "text-slate-800 dark:text-white" : "text-slate-450 dark:text-white/40"}`}
+                >
+                  {day.min}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Bottom Summary (Unified Pill Capsule) */}
@@ -786,11 +873,10 @@ export default function Home() {
                 strokeDashoffset={100 - completionPercent}
               />
             </svg>
-            <Flame className={`w-4.5 h-4.5 animate-pulse ${
-              calculateStreakStatus(statsData.lastStudyDate)
-                ? "text-slate-800 dark:text-white fill-slate-800 dark:fill-white"
-                : "text-slate-300 dark:text-white/20 fill-none"
-            }`} />
+            <Flame 
+              className={`w-4 h-4 ${glowClass} ${fillClass} transition-all duration-300`} 
+              style={{ transform: `scale(${scale})` }}
+            />
           </div>
         </div>
       </div>
@@ -1208,7 +1294,7 @@ export default function Home() {
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.96, y: 10 }}
                               transition={{ duration: 0.3, ease: "easeOut" }}
-                              className="w-full app-theme-card rounded-3xl p-4.5 shadow-xl relative overflow-hidden hover:scale-[1.02] hover:bg-black/5 dark:hover:bg-white/15 hover:border-slate-350 dark:hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] active:scale-[0.98] group flex flex-col justify-between min-h-[180px] cursor-pointer transition-all duration-300"
+                              className="w-full app-theme-card rounded-3xl p-3.5 sm:p-4.5 shadow-xl relative overflow-hidden hover:scale-[1.02] hover:bg-black/5 dark:hover:bg-white/15 hover:border-slate-350 dark:hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] active:scale-[0.98] group flex flex-col justify-between min-h-[195px] h-full cursor-pointer transition-all duration-300"
                             >
                               {/* Glow */}
                               <div
@@ -1250,21 +1336,24 @@ export default function Home() {
                                     </svg>
                                   </span>
                                 )}
-                                                            {/* Middle: Subject Title & Level/Duration */}
-                              <div className="mt-3.5 flex flex-col">
-                                <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-black dark:group-hover:text-white transition-colors text-sm line-clamp-1 leading-tight">
+                              </div>
+
+                              {/* Middle: Subject Title & Level/Duration */}
+                              <div className="mt-3 flex flex-col">
+                                <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-black dark:group-hover:text-white transition-colors text-xs sm:text-sm line-clamp-1 leading-tight">
                                   {subject.name || subject.title}
                                 </h3>
 
                                 {/* Level & Duration */}
-                                <div className="flex items-center justify-between text-[9px] text-slate-500 dark:text-white/50 mt-1 font-medium">
+                                <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] text-slate-500 dark:text-white/50 mt-1 font-medium flex-wrap">
                                   <span>{subject.level}</span>
+                                  <span>•</span>
                                   <span>{subject.duration}</span>
                                 </div>
 
                                 {/* Certificate Icon */}
                                 {subject.hasCertificate && (
-                                  <div className="flex items-center gap-1 text-[8px] text-slate-800 dark:text-white font-bold mt-1.5">
+                                  <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] text-slate-800 dark:text-white font-bold mt-1.5">
                                     <Award className="w-3 h-3 text-slate-800 dark:text-white flex-shrink-0" />
                                     <span>Sertifikat</span>
                                   </div>
@@ -1273,7 +1362,7 @@ export default function Home() {
 
                               {/* Bottom: Progress Bar */}
                               <div className="mt-3">
-                                <div className="flex justify-between text-[9px] text-slate-500 dark:text-white/50 mb-1 font-medium">
+                                <div className="flex justify-between gap-2 text-[8px] sm:text-[9px] text-slate-500 dark:text-white/50 mb-1 font-medium">
                                   <span>Progres</span>
                                   <span>{subject.progress}%</span>
                                 </div>
@@ -1283,7 +1372,7 @@ export default function Home() {
                                     style={{ width: `${subject.progress}%` }}
                                   />
                                 </div>
-                              </div>  </div>
+                              </div>
                             </motion.div>
                           </ProtectedCourse>
                         ))}
@@ -1356,7 +1445,7 @@ export default function Home() {
 
       {/* Profile Menu Drawer (Glassmorphism Slide-out panel) */}
       <div
-        className="fixed top-4 right-4 bottom-4 w-[320px] sm:w-[380px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl z-50 flex flex-col items-center gap-6 overflow-y-auto"
+        className="fixed top-4 right-4 bottom-4 w-[320px] sm:w-[380px] bg-white dark:bg-neutral-950 border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl z-50 flex flex-col items-center gap-6 overflow-y-auto"
         style={{
           transform: isProfileDrawerOpen ? "translateX(0)" : "translateX(120%)",
           transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -1540,12 +1629,12 @@ export default function Home() {
               animate={{ x: 0 }}
               exit={{ x: "110%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-4 right-4 bottom-4 w-[320px] sm:w-[380px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl z-50 flex flex-col justify-between overflow-hidden"
+              className="fixed top-4 right-4 bottom-4 w-[320px] sm:w-[380px] bg-white dark:bg-neutral-950 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl z-50 flex flex-col justify-between overflow-hidden"
             >
               {/* Header */}
               <div className="p-5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-650 dark:text-purple-300">
+                  <div className="w-8 h-8 rounded-xl bg-neutral-500/10 border border-neutral-500/20 flex items-center justify-center text-neutral-750 dark:text-neutral-300">
                     <svg
                       className="w-4.5 h-4.5"
                       fill="none"
@@ -1597,13 +1686,13 @@ export default function Home() {
                         key={item.id}
                         className={`w-full rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col shadow-sm ${
                           item.isRead
-                            ? "bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5 text-slate-700 dark:text-white/70 hover:bg-slate-100 dark:hover:bg-white/10"
-                            : "bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-500/20 text-slate-900 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                            ? "bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/80"
+                            : "bg-neutral-100/80 dark:bg-neutral-800/40 border-neutral-300 dark:border-neutral-700 text-neutral-955 dark:text-neutral-100 hover:bg-neutral-200/80 dark:hover:bg-neutral-800/60"
                         }`}
                       >
                         {/* Unread Accent Left Line Indicator */}
                         {!item.isRead && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-400 to-indigo-500" />
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neutral-400 to-neutral-600" />
                         )}
 
                         {/* Item Header (Clickable to Toggle Dropdown) */}
@@ -1623,18 +1712,18 @@ export default function Home() {
                         >
                           <div className="flex flex-col min-w-0">
                             <span
-                              className={`text-[11px] font-bold ${!item.isRead ? "text-purple-900 dark:text-purple-200" : "text-slate-750 dark:text-white/80"}`}
+                              className={`text-[11px] font-bold ${!item.isRead ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-700 dark:text-neutral-300"}`}
                             >
                               {item.title}
                             </span>
-                            <span className="text-[8px] text-slate-400 dark:text-white/30 font-medium mt-0.5">
+                            <span className="text-[8px] text-neutral-400 dark:text-neutral-500 font-medium mt-0.5">
                               {item.date}
                             </span>
                           </div>
                           <motion.svg
                             animate={{ rotate: isExpanded ? 180 : 0 }}
                             transition={{ duration: 0.2 }}
-                            className="w-4 h-4 text-slate-400 dark:text-white/30 flex-shrink-0 mt-0.5"
+                            className="w-4 h-4 text-neutral-400 dark:text-neutral-600 flex-shrink-0 mt-0.5"
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="2.5"
@@ -1658,8 +1747,8 @@ export default function Home() {
                               transition={{ duration: 0.25, ease: "easeInOut" }}
                               className="overflow-hidden"
                             >
-                              <div className="px-4 pb-3.5 pt-1 pl-4 flex flex-col gap-3 border-t border-slate-100 dark:border-white/5">
-                                <p className="text-[10px] leading-relaxed text-slate-650 dark:text-white/50 font-normal">
+                              <div className="px-4 pb-3.5 pt-1 pl-4 flex flex-col gap-3 border-t border-neutral-200 dark:border-neutral-800">
+                                <p className="text-[10px] leading-relaxed text-neutral-600 dark:text-neutral-400 font-normal">
                                   {item.message}
                                 </p>
                                 
@@ -1675,7 +1764,7 @@ export default function Home() {
                                           )
                                         );
                                       }}
-                                      className="px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-650 dark:text-purple-300 text-[9px] font-bold transition-all cursor-pointer active:scale-95 border border-purple-500/20"
+                                      className="px-3 py-1.5 rounded-lg bg-neutral-500/20 hover:bg-neutral-500/30 text-neutral-700 dark:text-neutral-300 text-[9px] font-bold transition-all cursor-pointer active:scale-95 border border-neutral-500/20"
                                     >
                                       Tandai Dibaca
                                     </button>
@@ -1704,7 +1793,7 @@ export default function Home() {
                   })
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-slate-400 dark:text-white/25">
+                    <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-neutral-400 dark:text-neutral-600">
                       <svg
                         className="w-6 h-6"
                         fill="none"
@@ -1719,7 +1808,7 @@ export default function Home() {
                         />
                       </svg>
                     </div>
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-white/40">
+                    <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-600">
                       Tidak ada notifikasi baru
                     </span>
                   </div>
@@ -1728,13 +1817,13 @@ export default function Home() {
 
               {/* Sticky Footer Clear All Button */}
               {notifications.length > 0 && (
-                <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-black/10 w-full">
+                <div className="p-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 w-full">
                   <button
                     onClick={() => {
                       setNotifications([]);
                       setExpandedNotificationId(null);
                     }}
-                    className="w-full py-3.5 rounded-2xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-slate-800 dark:text-white text-xs font-bold transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                    className="w-full py-3.5 rounded-2xl bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs font-bold transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                   >
                     Clear All Notifications
                   </button>
@@ -1767,7 +1856,7 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-x-6 top-1/2 -translate-y-1/2 mx-auto max-w-md w-[90%] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-4.5 overflow-hidden backdrop-blur-xl"
+              className="fixed inset-x-6 top-1/2 -translate-y-1/2 mx-auto max-w-md w-[90%] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-4.5 overflow-hidden backdrop-blur-xl"
             >
               {/* Card Header */}
               <div className="flex justify-between items-center w-full">
@@ -1775,7 +1864,7 @@ export default function Home() {
                   <h3 className="text-xs font-bold app-theme-text uppercase tracking-wider">
                     Pencarian
                   </h3>
-                  <span className="text-[8px] text-slate-500 dark:text-white/40 font-semibold mt-0.5">
+                  <span className="text-[8px] text-neutral-500 dark:text-neutral-400 font-semibold mt-0.5">
                     Temukan kelas & materi belajar
                   </span>
                 </div>
@@ -1786,7 +1875,7 @@ export default function Home() {
                     setIsSearchOpen(false);
                     setSearchQuery("");
                   }}
-                  className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-slate-700 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                  className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   <svg
                     className="w-4 h-4"
@@ -1812,10 +1901,10 @@ export default function Home() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
-                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3.5 pl-11 pr-5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:bg-white/8 transition-all shadow-inner"
+                  className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl py-3.5 pl-11 pr-5 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:bg-neutral-100/50 transition-all shadow-inner"
                 />
                 <svg
-                  className="w-4.5 h-4.5 text-slate-400 dark:text-white/30 absolute left-4 top-1/2 -translate-y-1/2"
+                  className="w-4.5 h-4.5 text-neutral-400 dark:text-neutral-600 absolute left-4 top-1/2 -translate-y-1/2"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.5"
@@ -1832,7 +1921,7 @@ export default function Home() {
               {/* Search Results Display Area */}
               <div className="w-full max-h-[300px] overflow-y-auto pr-1 flex flex-col gap-2.5 scrollbar-none">
                 {searchQuery.trim() === "" ? (
-                  <div className="text-center py-8 text-slate-400 dark:text-white/30 text-[10px] font-semibold">
+                  <div className="text-center py-8 text-neutral-400 dark:text-neutral-600 text-[10px] font-semibold">
                     Ketik kata kunci untuk memulai pencarian...
                   </div>
                 ) : searchResults.length > 0 ? (
@@ -1844,20 +1933,20 @@ export default function Home() {
                         setSearchQuery("");
                         router.push(`/lesson/${result.subjectId}`);
                       }}
-                      className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-[var(--text-color)]/25 text-left transition-all cursor-pointer flex items-center justify-between group shadow-sm"
+                      className="w-full p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:border-[var(--text-color)]/25 text-left transition-all cursor-pointer flex items-center justify-between group shadow-sm"
                     >
                       <div className="flex items-center gap-3">
                         {/* Subject Icon color indicator */}
                         <div
-                          className="w-8 h-8 rounded-lg bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 text-slate-800 dark:text-white flex items-center justify-center text-[9px] font-extrabold shadow-md"
+                          className="w-8 h-8 rounded-lg bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 flex items-center justify-center text-[9px] font-extrabold shadow-md"
                         >
                           {result.type === "subject" ? "Kls" : "Mtr"}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[var(--text-color)] transition-colors leading-tight">
+                          <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-[var(--text-color)] transition-colors leading-tight">
                             {result.title}
                           </span>
-                          <span className="text-[9px] text-slate-500 dark:text-white/40 font-semibold mt-0.5">
+                          <span className="text-[9px] text-neutral-500 dark:text-neutral-500 font-semibold mt-0.5">
                             {result.type === "subject"
                               ? `Kategori: ${result.category}`
                               : result.description}
@@ -1867,7 +1956,7 @@ export default function Home() {
 
                       {/* Arrow indicator */}
                       <svg
-                        className="w-4 h-4 text-slate-400 dark:text-white/30 group-hover:text-[var(--text-color)] group-hover:translate-x-0.5 transition-all"
+                        className="w-4 h-4 text-neutral-400 dark:text-neutral-600 group-hover:text-[var(--text-color)] group-hover:translate-x-0.5 transition-all"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2.5"
@@ -1883,7 +1972,7 @@ export default function Home() {
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center gap-2.5">
-                    <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center text-slate-450 dark:text-white/20">
+                    <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-400 dark:text-neutral-600">
                       <svg
                         className="w-5 h-5"
                         fill="none"
@@ -1897,7 +1986,7 @@ export default function Home() {
                         />
                       </svg>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-450 dark:text-white/30">
+                    <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-600">
                       Materi tidak ditemukan
                     </span>
                   </div>
@@ -1918,15 +2007,15 @@ export default function Home() {
           />
           
           {/* Modal Box */}
-          <div className="max-w-sm w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-[2.5rem] p-8 shadow-2xl relative z-10 overflow-hidden flex flex-col items-center">
+          <div className="max-w-sm w-full bg-white dark:bg-neutral-950 border border-slate-200 dark:border-white/15 rounded-[2.5rem] p-8 shadow-2xl relative z-10 overflow-hidden flex flex-col items-center">
             {/* Decorative Orb */}
-            <div className="absolute -top-10 -left-10 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/5 dark:bg-white/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-blue-500/5 dark:bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
             {/* Header */}
             <div className="text-center mb-6 w-full">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center border border-white/20 shadow-md mx-auto mb-4 animate-bounce-slow">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center border border-black/10 dark:border-white/20 shadow-md mx-auto mb-4 animate-bounce-slow">
+                <Sparkles className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                 Lanjutkan dengan Studee
@@ -1939,7 +2028,7 @@ export default function Home() {
             {/* Form / Actions */}
             <form onSubmit={handleModalLogin} className="space-y-3.5 w-full">
               <div className="flex flex-col gap-1 text-left">
-                <label className="text-[8px] font-bold uppercase tracking-widest text-purple-700 dark:text-purple-200/60 pl-1">
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-700 dark:text-white/60 pl-1">
                   Alamat Email
                 </label>
                 <input
@@ -1948,16 +2037,16 @@ export default function Home() {
                   placeholder="nama@email.com"
                   value={modalEmail}
                   onChange={(e) => setModalEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-4 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white/10 transition-all"
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-4 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-[var(--text-color)] focus:bg-white/10 transition-all"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700 dark:bg-white/20 dark:hover:bg-white/30 border border-purple-500 dark:border-white/25 text-white rounded-2xl py-3.5 px-4 text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 mt-1.5"
+                className="w-full bg-black dark:bg-white hover:bg-black/90 dark:hover:bg-white/90 text-white dark:text-black border border-black/10 dark:border-white/10 rounded-2xl py-3.5 px-4 text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 mt-1.5"
               >
                 <span>Masuk / Daftar</span>
-                <ChevronRight className="w-4 h-4 text-white" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </form>
 
