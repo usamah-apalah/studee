@@ -22,14 +22,9 @@ export async function POST(request) {
       );
     }
 
-    // Ambil semua user yang memiliki data Face ID terdaftar
-    const users = await prisma.user.findMany({
-      where: {
-        faceDescriptor: {
-          isEmpty: false
-        }
-      }
-    });
+    // Ambil semua user dan filter yang memiliki data Face ID valid (128-dimensi) di memory
+    const allUsers = await prisma.user.findMany();
+    const users = allUsers.filter(user => user.faceDescriptor && user.faceDescriptor.length === 128);
 
     if (users.length === 0) {
       return NextResponse.json(

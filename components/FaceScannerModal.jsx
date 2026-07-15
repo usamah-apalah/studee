@@ -193,7 +193,7 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
         const positions = detection.landmarks.positions;
 
         // --- GAMBAR CYBERNETIC FACE MESH (MediaPipe-Style) ---
-        ctx.strokeStyle = "rgba(6, 182, 212, 0.4)"; // Cyan transparan
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)"; // Putih transparan
         ctx.lineWidth = 1;
 
         // 1. Garis Rahang (Jaw Outline)
@@ -254,8 +254,8 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
         ctx.closePath();
         ctx.stroke();
 
-        // 10. Titik Sensor Menyala (Glowing Cyan Sensor Nodes)
-        ctx.fillStyle = "#22d3ee"; // Bright cyan
+        // 10. Titik Sensor Menyala (Glowing Sensor Nodes)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; // Putih solid
         for (let i = 0; i < positions.length; i++) {
           ctx.beginPath();
           ctx.arc(positions[i].x, positions[i].y, 1.8, 0, 2 * Math.PI);
@@ -277,8 +277,8 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
         if (distanceToCenter < 120 && box.width > 120) {
           setStatusText("Memindai... Jangan bergerak.");
           
-          // Gambar lingkaran hijau pelacak wajah
-          ctx.strokeStyle = "#10B981";
+          // Gambar lingkaran pelacak wajah (Putih aktif)
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
           ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.arc(faceCenterX, faceCenterY, box.width / 2 + 10, 0, 2 * Math.PI);
@@ -308,8 +308,8 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
           }
         } else {
           setStatusText("Dekatkan wajah Anda ke tengah lingkaran.");
-          // Gambar lingkaran kuning instruksi
-          ctx.strokeStyle = "#F59E0B";
+          // Gambar lingkaran instruksi (Putih redup)
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(faceCenterX, faceCenterY, box.width / 2 + 10, 0, 2 * Math.PI);
@@ -394,7 +394,7 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col justify-between bg-slate-950 text-white p-6 font-sans select-none">
+    <div className="fixed inset-0 z-[9999] flex flex-col justify-between bg-black text-white font-sans select-none overflow-hidden">
       {/* Laser scan animation stylesheet */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes scan-laser {
@@ -404,88 +404,102 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
         }
       `}} />
 
-      {/* Decorative background glow elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[450px] h-[450px] rounded-full bg-cyan-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[450px] h-[450px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none" />
-
-      {/* Top Section */}
-      <div className="w-full max-w-md mx-auto text-center pt-8 relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-wider mb-4 animate-pulse">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-          Sistem Autentikasi Biometrik
-        </div>
-        <h3 className="text-2xl font-black text-white tracking-tight">
-          {mode === "register" ? "Daftarkan Face ID" : "Scan Masuk Face ID"}
-        </h3>
-        <p className="text-xs text-slate-400 mt-2 px-4 leading-relaxed">
-          {mode === "register"
-            ? "Pindai wajah Anda untuk mendaftarkan kunci login biometrik."
-            : "Posisikan wajah Anda di depan kamera untuk verifikasi masuk."}
-        </p>
-      </div>
-
-      {/* Middle Section (Camera Viewport) */}
-      <div className="relative w-[280px] h-[280px] mx-auto bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-[0_0_50px_rgba(6,182,212,0.15)] flex items-center justify-center z-10">
-        {/* Cyberpunk Neon Corner Brackets */}
-        <div className="absolute top-3 left-3 w-6 h-6 border-t-[3px] border-l-[3px] border-cyan-400 rounded-tl-lg z-20 pointer-events-none" />
-        <div className="absolute top-3 right-3 w-6 h-6 border-t-[3px] border-r-[3px] border-cyan-400 rounded-tr-lg z-20 pointer-events-none" />
-        <div className="absolute bottom-3 left-3 w-6 h-6 border-b-[3px] border-l-[3px] border-cyan-400 rounded-bl-lg z-20 pointer-events-none" />
-        <div className="absolute bottom-3 right-3 w-6 h-6 border-b-[3px] border-r-[3px] border-cyan-400 rounded-br-lg z-20 pointer-events-none" />
-
-        {/* Scanning Laser Line */}
-        {!errorMsg && streamActive && (
-          <div 
-            className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#06b6d4] z-20 pointer-events-none"
-            style={{ animation: 'scan-laser 3s ease-in-out infinite', position: 'absolute' }}
-          />
-        )}
-
-        {errorMsg ? (
-          <div className="absolute inset-0 bg-red-950/40 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 mb-3">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <p className="text-xs font-semibold text-red-400 px-2 leading-relaxed">{errorMsg}</p>
-          </div>
-        ) : null}
-
-        {/* Video stream */}
+      {/* Full screen video feed */}
+      <div className="absolute inset-0 w-full h-full z-10 bg-black">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover scale-x-[-1] z-10"
+          className="w-full h-full object-cover scale-x-[-1]"
         />
         <canvas
           ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none scale-x-[-1] z-20"
+          className="absolute inset-0 w-full h-full pointer-events-none scale-x-[-1] z-20"
         />
       </div>
 
-      {/* Bottom Section */}
-      <div className="w-full max-w-md mx-auto pb-12 relative z-10 space-y-8">
-        {/* Progress & Status */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center text-xs font-semibold px-2">
-            <span className="text-slate-400 tracking-wide uppercase">{statusText}</span>
-            <span className="text-cyan-400 font-mono text-sm">{progress}%</span>
-          </div>
-          <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800 shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 shadow-[0_0_12px_rgba(6,182,212,0.5)] transition-all duration-300 rounded-full"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Cancel Scan Button */}
+      {/* Top Section - Back Button and Clean Title */}
+      <div className="w-full relative z-30 flex items-center justify-center pt-8 px-6">
         <button
           type="button"
           onClick={handleClose}
-          className="w-full py-4 bg-slate-900 hover:bg-slate-850 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-[0.98] border border-slate-850 hover:border-slate-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] cursor-pointer text-sm"
+          className="w-10 h-10 rounded-full bg-black/45 backdrop-blur-md border border-white/10 flex items-center justify-center text-white absolute left-6 hover:bg-black/60 active:scale-95 transition-all cursor-pointer"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h3 className="text-xs font-bold tracking-widest uppercase text-white/95">
+          {mode === "register" ? "Registrasi Wajah" : "Verifikasi Wajah"}
+        </h3>
+      </div>
+
+      {/* Middle Section (Face Oval Guide Overlay) */}
+      <div className="relative w-full flex justify-center items-center flex-1 z-30 pointer-events-none">
+        {/* Clean white oval guide */}
+        <div className="w-[240px] h-[320px] border-2 border-white/40 rounded-[50%] relative overflow-hidden flex items-center justify-center">
+          {/* Sweeping clean white laser line inside the oval */}
+          {!errorMsg && streamActive && (
+            <div 
+              className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent shadow-[0_0_8px_white]"
+              style={{ animation: 'scan-laser 3s ease-in-out infinite', position: 'absolute' }}
+            />
+          )}
+
+          {errorMsg ? (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-40 pointer-events-auto">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-[11px] font-semibold text-red-400 leading-relaxed px-2">{errorMsg}</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Bottom Section - Circular Progress & Controls */}
+      <div className="w-full max-w-xs mx-auto pb-12 relative z-30 text-center space-y-6">
+        {/* SVG Circular Progress Tracker */}
+        <div className="relative w-20 h-20 flex items-center justify-center bg-black/45 backdrop-blur-md rounded-full border border-white/10 mx-auto">
+          <svg className="w-20 h-20 transform -rotate-90">
+            {/* Background circle */}
+            <circle
+              cx="40"
+              cy="40"
+              r="30"
+              className="stroke-white/10"
+              strokeWidth="3.5"
+              fill="transparent"
+            />
+            {/* Active progress circle */}
+            <circle
+              cx="40"
+              cy="40"
+              r="30"
+              className="stroke-white transition-all duration-300"
+              strokeWidth="3.5"
+              fill="transparent"
+              strokeDasharray={2 * Math.PI * 30}
+              strokeDashoffset={2 * Math.PI * 30 - (progress / 100) * (2 * Math.PI * 30)}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="absolute text-sm font-mono font-bold text-white">{progress}%</span>
+        </div>
+
+        {/* Status text instruction */}
+        <p className="text-xs font-semibold text-white/80 tracking-wide uppercase px-4 leading-relaxed h-8 flex items-center justify-center">
+          {statusText}
+        </p>
+
+        {/* Cancel Button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="w-full py-4 bg-black/45 backdrop-blur-md hover:bg-black/60 active:scale-[0.97] text-white rounded-full font-bold transition-all shadow-lg border border-white/10 cursor-pointer text-xs tracking-widest uppercase"
         >
           Batalkan Scan
         </button>
