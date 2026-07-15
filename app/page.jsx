@@ -12,9 +12,12 @@ export default function RootPage() {
     const logged = typeof document !== "undefined" && document.cookie.includes("isLoggedIn=true");
     const hasVisited = localStorage.getItem("hasVisitedOnboarding") === "true";
     
-    if (logged || hasVisited) {
+    if (logged) {
       setIsLoggedIn(true);
       router.push("/dashboard");
+    } else if (hasVisited) {
+      setIsLoggedIn(false);
+      router.push("/library");
     } else {
       setIsLoggedIn(false);
     }

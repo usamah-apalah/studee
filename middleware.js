@@ -7,10 +7,14 @@ export function middleware(request) {
   const userRole = request.cookies.get('userRole')?.value;
 
   // List of protected routes that require login
-  const protectedRoutes = ['/lesson', '/dashboard', '/profile', '/library', '/stats'];
+  const protectedRoutes = ['/dashboard', '/profile', '/stats'];
+
+  // Check if accessing actual lesson player (e.g. /lesson/[id]/[lessonIdx] -> segments length > 2)
+  const segments = url.pathname.split('/').filter(Boolean);
+  const isLessonPlayer = segments[0] === 'lesson' && segments.length > 2;
 
   // 1. Redirect to /login if trying to access protected routes while logged out
-  const isAccessingProtectedRoute = protectedRoutes.some(route => url.pathname.startsWith(route));
+  const isAccessingProtectedRoute = protectedRoutes.some(route => url.pathname.startsWith(route)) || isLessonPlayer;
   if (isAccessingProtectedRoute && !isLoggedIn) {
     url.pathname = '/login';
     // Append redirectTo parameter so they can redirect back after successful login
@@ -32,10 +36,9 @@ export function middleware(request) {
 export const config = {
   matcher: [
     '/admin', '/admin/:path*',
-    '/lesson', '/lesson/:path*',
+    '/lesson/:path*',
     '/dashboard', '/dashboard/:path*',
     '/profile', '/profile/:path*',
-    '/library', '/library/:path*',
     '/stats', '/stats/:path*'
   ],
 };

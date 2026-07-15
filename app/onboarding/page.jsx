@@ -12,14 +12,10 @@ export default function OnboardingPage() {
   const handleStart = () => {
     if (typeof window !== "undefined") {
       localStorage.setItem("hasVisitedOnboarding", "true");
-      localStorage.setItem("isLoggedIn", "true");
-      document.cookie = "isLoggedIn=true; path=/";
-      localStorage.setItem("userRole", "user");
-      document.cookie = "userRole=user; path=/";
     }
     setIsExiting(true);
     setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/library");
     }, 600); // 600ms match duration of ease-out transition
   };
 
