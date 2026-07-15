@@ -8,6 +8,7 @@ import FaceScannerModal from "../../components/FaceScannerModal";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [showFaceScanner, setShowFaceScanner] = useState(false);
+  const [backHref, setBackHref] = useState("/dashboard");
   const router = useRouter();
 
   useEffect(() => {
@@ -15,6 +16,14 @@ export default function Login() {
       const hasFace = localStorage.getItem("hasFaceId") === "true";
       if (hasFace) {
         setShowFaceScanner(true);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirectTo") || "";
+      if (redirect.includes("/library") || redirect.includes("/lesson")) {
+        setBackHref("/library");
+      } else {
+        setBackHref("/dashboard");
       }
     }
   }, []);
@@ -152,7 +161,7 @@ export default function Login() {
 
       {/* Back to Home Button */}
       <Link
-        href="/dashboard"
+        href={backHref}
         className="absolute top-6 left-6 flex items-center gap-2 app-theme-text-muted app-theme-card hover:bg-black/5 dark:hover:bg-white/5 rounded-xl py-2 px-4 transition-all text-sm hover:shadow-[0_0_15px_rgba(255,255,255,0.06)]"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
