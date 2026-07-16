@@ -353,7 +353,7 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
 
     try {
       const endpoint = mode === "register" ? "/api/auth/face/register" : "/api/auth/face/login";
-      const payload = mode === "register" ? { email, faceDescriptor: descriptor } : { faceDescriptor: descriptor };
+      const payload = mode === "register" ? { email, faceDescriptor: Array.from(descriptor) } : { faceDescriptor: Array.from(descriptor) };
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -463,22 +463,22 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
           ref={canvasRef}
           className="absolute top-0 left-0 w-full h-full pointer-events-none scale-x-[-1] z-20"
         />
+
+        {/* Circular Progress Overlay */}
+        {!errorMsg && streamActive && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+            <div className="w-20 h-20 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+              <span className="text-white font-bold text-xl">{progress}%</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Section */}
-      <div className="w-full max-w-md mx-auto pb-12 relative z-10 space-y-8">
-        {/* Progress & Status */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center text-xs font-semibold px-2">
-            <span className="text-slate-400 tracking-wide uppercase">{statusText}</span>
-            <span className="text-cyan-400 font-mono text-sm">{progress}%</span>
-          </div>
-          <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800 shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 shadow-[0_0_12px_rgba(6,182,212,0.5)] transition-all duration-300 rounded-full"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+      <div className="w-full max-w-md mx-auto pb-12 relative z-10 space-y-8 mt-6">
+        {/* Status */}
+        <div className="flex justify-center items-center text-sm font-semibold px-2 text-center">
+          <span className="text-slate-400 tracking-wide uppercase">{statusText}</span>
         </div>
 
         {/* Cancel Scan Button */}
