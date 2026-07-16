@@ -74,7 +74,7 @@ export default function StatsPage() {
           {/* Header Bar */}
           <div className="flex items-center justify-between w-full">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/dashboard")}
               className="flex items-center gap-1 text-sm font-semibold text-white/70 hover:text-white transition-all cursor-pointer"
               aria-label="Back to Home"
             >
@@ -205,7 +205,7 @@ export default function StatsPage() {
         {/* Continue Button */}
         <div className="w-full mt-8">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/dashboard")}
             className="w-full py-4 bg-white text-black font-bold rounded-2xl shadow-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
           >
             Lanjutkan

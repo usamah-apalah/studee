@@ -156,7 +156,7 @@ export default function Navbar() {
                 return;
               }
               if (tab.id === "home") {
-                router.push("/");
+                router.push("/dashboard");
                 return;
               }
               if (tab.id === "learn") {

@@ -57,7 +57,7 @@ export default function LibraryPage() {
         {/* Header Navigation */}
         <div className="flex items-center justify-between w-full">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/dashboard")}
             className="w-10 h-10 app-theme-card rounded-full flex items-center justify-center text-[var(--text-color)] transition-colors cursor-pointer active:scale-95"
             title="Kembali"
           >

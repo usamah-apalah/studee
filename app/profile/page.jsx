@@ -539,7 +539,7 @@ export default function ProfilePage() {
         {/* Header Bar */}
         <div className="flex items-center justify-between w-full">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/dashboard")}
             className="w-10 h-10 app-theme-card rounded-xl flex items-center justify-center text-[var(--text-color)] transition-all cursor-pointer shadow-md active:scale-95"
             aria-label="Back"
           >
