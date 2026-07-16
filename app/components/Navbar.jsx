@@ -60,7 +60,7 @@ export default function Navbar() {
 
   // Determine active tab based on pathname
   let activeTab = "home";
-  if (pathname === "/") {
+  if (pathname === "/" || pathname === "/dashboard") {
     activeTab = "home";
   } else if (pathname.startsWith("/lesson") || pathname.startsWith("/library")) {
     activeTab = "learn";
@@ -160,7 +160,7 @@ export default function Navbar() {
                 return;
               }
               if (tab.id === "home") {
-                router.push("/");
+                router.push("/dashboard");
                 return;
               }
               if (tab.id === "learn") {
