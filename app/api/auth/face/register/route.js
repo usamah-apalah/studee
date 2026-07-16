@@ -33,7 +33,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Gagal mendaftarkan Face ID:", error);
     return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan internal server." },
+      { success: false, error: `Terjadi kesalahan internal server: ${error.message || error}` },
       { status: 500 }
     );
   }
