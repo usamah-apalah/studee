@@ -394,7 +394,7 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col justify-between bg-slate-950 text-white p-6 font-sans select-none">
+    <div className="fixed inset-0 z-[9999] flex flex-col justify-between bg-black text-white font-sans select-none overflow-hidden">
       {/* Laser scan animation stylesheet */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes scan-laser {
@@ -404,91 +404,87 @@ export default function FaceScannerModal({ mode = "login", email = "", onClose, 
         }
       `}} />
 
-      {/* Decorative background glow elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[450px] h-[450px] rounded-full bg-cyan-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[450px] h-[450px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none" />
-
-      {/* Top Section */}
-      <div className="w-full max-w-md mx-auto text-center pt-8 relative z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-wider mb-4 animate-pulse">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-          Sistem Autentikasi Biometrik
-        </div>
-        <h3 className="text-2xl font-black text-white tracking-tight">
-          {mode === "register" ? "Daftarkan Face ID" : "Scan Masuk Face ID"}
-        </h3>
-        <p className="text-xs text-slate-400 mt-2 px-4 leading-relaxed">
-          {mode === "register"
-            ? "Pindai wajah Anda untuk mendaftarkan kunci login biometrik."
-            : "Posisikan wajah Anda di depan kamera untuk verifikasi masuk."}
-        </p>
-      </div>
-
-      {/* Middle Section (Camera Viewport) */}
-      <div className="relative w-[280px] h-[280px] mx-auto bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-[0_0_50px_rgba(6,182,212,0.15)] flex items-center justify-center z-10">
-        {/* Cyberpunk Neon Corner Brackets */}
-        <div className="absolute top-3 left-3 w-6 h-6 border-t-[3px] border-l-[3px] border-cyan-400 rounded-tl-lg z-20 pointer-events-none" />
-        <div className="absolute top-3 right-3 w-6 h-6 border-t-[3px] border-r-[3px] border-cyan-400 rounded-tr-lg z-20 pointer-events-none" />
-        <div className="absolute bottom-3 left-3 w-6 h-6 border-b-[3px] border-l-[3px] border-cyan-400 rounded-bl-lg z-20 pointer-events-none" />
-        <div className="absolute bottom-3 right-3 w-6 h-6 border-b-[3px] border-r-[3px] border-cyan-400 rounded-br-lg z-20 pointer-events-none" />
-
-        {/* Scanning Laser Line */}
-        {!errorMsg && streamActive && (
-          <div 
-            className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#06b6d4] z-20 pointer-events-none"
-            style={{ animation: 'scan-laser 3s ease-in-out infinite', position: 'absolute' }}
-          />
-        )}
-
-        {errorMsg ? (
-          <div className="absolute inset-0 bg-red-950/40 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 mb-3">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <p className="text-xs font-semibold text-red-400 px-2 leading-relaxed">{errorMsg}</p>
-          </div>
-        ) : null}
-
-        {/* Video stream */}
+      {/* Fullscreen Video Background */}
+      <div className="absolute inset-0 z-0 bg-black">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover scale-x-[-1] z-10"
+          className="w-full h-full object-cover scale-x-[-1]"
         />
         <canvas
           ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none scale-x-[-1] z-20"
+          className="absolute top-0 left-0 w-full h-full pointer-events-none scale-x-[-1]"
         />
+        
+        {/* Subtle dark overlay for better text contrast */}
+        <div className="absolute inset-0 bg-black/30 pointer-events-none"></div>
+
+        {/* Scanning Laser Line (White) */}
+        {!errorMsg && streamActive && (
+          <div 
+            className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent shadow-[0_0_12px_#ffffff] z-10 pointer-events-none"
+            style={{ animation: 'scan-laser 3s ease-in-out infinite' }}
+          />
+        )}
 
         {/* Circular Progress Overlay */}
         {!errorMsg && streamActive && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-            <div className="w-20 h-20 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-              <span className="text-white font-bold text-xl">{progress}%</span>
+            <div className="w-24 h-24 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+              <span className="text-white font-bold text-2xl">{progress}%</span>
             </div>
           </div>
         )}
+
+        {errorMsg ? (
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-white mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-white px-4 leading-relaxed">{errorMsg}</p>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Top Section */}
+      <div className="w-full max-w-md mx-auto text-center pt-16 relative z-20 pointer-events-none">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white/90 text-xs font-bold uppercase tracking-wider mb-6 animate-pulse shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-white"></span>
+          Autentikasi Biometrik
+        </div>
+        <h3 className="text-3xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          {mode === "register" ? "DAFTARKAN WAJAH" : "VERIFIKASI WAJAH"}
+        </h3>
+        <p className="text-sm text-white/90 mt-3 px-6 leading-relaxed font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          {mode === "register"
+            ? "Pindai wajah Anda untuk mendaftarkan kunci login."
+            : "Posisikan wajah Anda di depan kamera untuk masuk."}
+        </p>
       </div>
 
       {/* Bottom Section */}
-      <div className="w-full max-w-md mx-auto pb-12 relative z-10 space-y-8 mt-6">
+      <div className="w-full max-w-md mx-auto pb-12 relative z-20 space-y-6">
         {/* Status */}
-        <div className="flex justify-center items-center text-sm font-semibold px-2 text-center">
-          <span className="text-slate-400 tracking-wide uppercase">{statusText}</span>
+        <div className="flex justify-center items-center text-sm font-bold px-2 text-center">
+          <span className="text-white tracking-wide uppercase bg-black/50 px-5 py-2.5 rounded-full backdrop-blur-md shadow-lg border border-white/10">
+            {statusText}
+          </span>
         </div>
 
         {/* Cancel Scan Button */}
-        <button
-          type="button"
-          onClick={handleClose}
-          className="w-full py-4 bg-slate-900 hover:bg-slate-850 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-[0.98] border border-slate-850 hover:border-slate-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] cursor-pointer text-sm"
-        >
-          Batalkan Scan
-        </button>
+        <div className="px-6">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="w-full py-4 bg-white hover:bg-gray-200 text-black rounded-2xl font-bold transition-all shadow-xl active:scale-[0.98] cursor-pointer text-sm tracking-wide"
+          >
+            BATALKAN SCAN
+          </button>
+        </div>
       </div>
     </div>
   );
